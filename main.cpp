@@ -70,6 +70,7 @@ class EventContainer;
 
 struct OpsEvent{
     
+    //  Rendered variables, unlike their base version, contain newline characters
     Weekdays weekday = Monday;
     std::string title = "";
     std::string renderedTitle = "";
@@ -153,7 +154,7 @@ class EventContainer{
 
     public:
     Weekdays weekday = tbd;
-    std::vector<OpsEvent*> scheduledEvents;
+    std::vector<OpsEvent*> scheduledEvents;     //  At the moment, event containers only support a single OpsEvent
     cv::Mat renderfield = cv::Mat(300, 75, CV_8UC4, cv::Scalar(0, 255, 0, 255));
     int pos[2] = { 10, 20 };
 
@@ -320,7 +321,7 @@ void loadOpsEvents(std::ifstream &inStream, std::vector<OpsEvent> &opsEvents);
 void saveOpsEvents(std::ofstream &outStream, const std::vector<OpsEvent> &opsEvents);
 
 const char *imageFilters[] = {"*.png", "*.jpg"};
-    const char *saveFileFormats[] = { "*.sav" };
+const char *saveFileFormats[] = { "*.sav" };
 
 //  Dear ImGUI texture load example, modified to use OpenCV as the image loader
 bool LoadTextureToMemory(cv::Mat image, GLuint* out_texture, int* out_width, int* out_height)
@@ -384,9 +385,11 @@ const int schedulePreviewMinimumWidth = 500;
 const int minimumWindowWidth = settingsBarWidth + schedulePreviewMinimumWidth;
 const int minimumWindowHeight = 400;
 
+//  Font settings
 bool unifyFontSize = false;
 int fontSize = 60;
 
+//  OpsEvent settings
 std::vector<OpsEvent> OpsEvents;
 OpsEvent dummyEvent = OpsEvent("", "", tbd, "");
 OpsEvent defaultEvent = OpsEvent("New OPS", "Leader", Monday, "Time");
@@ -394,6 +397,7 @@ static int selectedEventIndex = -1;
 bool OpsEventAdded = true;
 bool OpsEventWeekdayChanged = false;
 
+//  EventContainer settings
 std::vector<EventContainer> eventContainers;
 int firstEventContainerPos[2] = { 25, 295 };
 int eventContainerSize[2] = { 250, 755 };
@@ -403,11 +407,7 @@ bool eventContainerParametersChanged = false;
 bool redrawEventContainer = false;
 
 std::string workingDirectoryPath = std::filesystem::current_path().string();
-#ifdef FINAL_BUILD
 std::string schedulePath = workingDirectoryPath + "\\TXLC_Planning.png";
-#else
-std::string schedulePath = "..\\..\\TXLC_Planning.png";
-#endif
 
 int main(int, char**) {
     std::time_t currentTime = std::time({});
@@ -482,26 +482,29 @@ int main(int, char**) {
     std::cout << "schedule height: " << scheduleHeight << std::endl;
 #endif
 
-// #ifdef DEBUG
-//     //  fill OpsEvents for testing purposes
-//     OpsEvents.push_back(OpsEvent("test title", "TAJp", Wednesday, "8PM", "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent ut nunc arcu. In auctor volutpat erat, sed pellentesque elit aliquet vitae. Nullam porttitor tortor eget ex interdum, vitae laoreet nulla pretium. Maecenas at imperdiet nibh. Nunc eu justo sit amet libero eleifend cursus. Donec eget quam dui. Vivamus porta, arcu et bibendum egestas, nunc ante aliquam nulla, quis venenatis est quam quis enim. Aliquam gravida sed urna et aliquam. Phasellus semper tempor nisl ut sagittis. Nulla mollis tellus vitae ex eleifend, sed commodo sem volutpat. Pellentesque dictum porttitor diam a tempus. Aliquam at gravida diam. Interdum et malesuada fames ac ante ipsum primis in faucibus. Sed iaculis porttitor sapien, at pharetra ligula vestibulum ut."));
-//     OpsEvents.push_back(OpsEvent("test title 2", "ratatanFLO44", Friday, "9PM"));
-//     OpsEvents.push_back(OpsEvent("test title 3", "ratatanFLO44", Friday, "9PM"));
-//     OpsEvents.push_back(OpsEvent("test title", "TAJp", Thursday, "7PM"));
-//     OpsEvents.push_back(OpsEvent("test title", "Rancy", Monday, "7PM"));
-// #endif
+#ifdef DEBUG
+    //  fill OpsEvents for testing purposes
+    OpsEvents.push_back(OpsEvent("test title", "TAJp", Wednesday, "8PM", "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent ut nunc arcu. In auctor volutpat erat, sed pellentesque elit aliquet vitae. Nullam porttitor tortor eget ex interdum, vitae laoreet nulla pretium. Maecenas at imperdiet nibh. Nunc eu justo sit amet libero eleifend cursus. Donec eget quam dui. Vivamus porta, arcu et bibendum egestas, nunc ante aliquam nulla, quis venenatis est quam quis enim. Aliquam gravida sed urna et aliquam. Phasellus semper tempor nisl ut sagittis. Nulla mollis tellus vitae ex eleifend, sed commodo sem volutpat. Pellentesque dictum porttitor diam a tempus. Aliquam at gravida diam. Interdum et malesuada fames ac ante ipsum primis in faucibus. Sed iaculis porttitor sapien, at pharetra ligula vestibulum ut."));
+    OpsEvents.push_back(OpsEvent("test title 2", "ratatanFLO44", Friday, "9PM"));
+    OpsEvents.push_back(OpsEvent("test title 3", "ratatanFLO44", Friday, "9PM"));
+    OpsEvents.push_back(OpsEvent("test title", "TAJp", Thursday, "7PM"));
+    OpsEvents.push_back(OpsEvent("test title", "Rancy", Monday, "7PM"));
+#endif
 
+//  Initialize eventContainers, and bind OpsEvent to relevant EventContainer if applicable
     for(int i = 0; i < 7; ++i){
         eventContainers.push_back(EventContainer(eventContainerSize[0], eventContainerSize[1]));
         eventContainers[i].weekday = (Weekdays)i;
         for(auto &event : OpsEvents)
             if(i == event.weekday) eventContainers[i].scheduledEvents.push_back(&event);
     }
+
 #ifdef DEBUG
     for(int i = 0; i < 7; ++i){
         std::cout << OpsEvent::returnWeekday((Weekdays)i) << " has " << eventContainers[i].scheduledEvents.size() << " events planned"<< std::endl;
     }
 #endif
+
     setContainerSpacing(eventContainers, firstEventContainerPos, eventCeventContainerHorizontalSpacing);
     renderPreview(eventContainers, scheduleBackground, schedulePreview, fontSize);
     LoadTextureToMemory(schedulePreview, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
@@ -555,7 +558,6 @@ int main(int, char**) {
             char *directoryPathInput = tinyfd_selectFolderDialog("Select working directory", workingDirectoryPath.c_str());
             if(directoryPathInput) workingDirectoryPath = directoryPathInput;// strcpy_s(workingDirectoryPath, sizeof(workingDirectoryPath), directoryPathInput);
         }
-        if(buttonWidth){ }
         if(saveSchedule){ 
             std::string path = workingDirectoryPath;;
             path.append("\\schedule_project.jpg");
@@ -636,7 +638,6 @@ int main(int, char**) {
         ImGui::Text("Show container borders:");
         if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
             ImGui::SetTooltip("Show the bounding boxes of the\nevent containers");
-            // ImGui::SetTooltip("When selected, font size will\nautomatically be adjusted downward\nto fit within the event container");
         ImGui::SameLine(ImGui::GetContentRegionMax().x - 140);
         ImGui::Checkbox("##show_event_containers", &showEventContainerBoundingBox);
         if(ImGui::IsItemDeactivatedAfterEdit())
@@ -649,7 +650,7 @@ int main(int, char**) {
             ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed, 25.0f);
             ImGui::TableSetupColumn("Leader", ImGuiTableColumnFlags_None);
             ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_None);
-            ImGui::TableSetupColumn("Day", ImGuiTableColumnFlags_PreferSortAscending);      //  TODO: implement sorting base on weekday
+            ImGui::TableSetupColumn("Day", ImGuiTableColumnFlags_PreferSortAscending);      //  TODO: implement sorting based on weekday
             ImGui::TableHeadersRow();
 
             ImGuiListClipper clipper;
@@ -673,7 +674,7 @@ int main(int, char**) {
                     ImGui::Text(OpsEvents[i].time.c_str()); ImGui::TableNextColumn();
                     ImGui::Text(OpsEvents[i].returnWeekday(OpsEvents[i].weekday)); ImGui::TableNextColumn();
 
-                    ImGui::PopID();                         //  pop custom ID
+                    ImGui::PopID();                         //  pop custom ID set by PushID
                 }
             }
             ImGui::EndTable();
@@ -694,7 +695,7 @@ int main(int, char**) {
         ImGui::SameLine();
         if(OpsEvents.size() == 0)
             selectedEventIndex = -1;
-        if(selectedEventIndex < 0){
+        if(selectedEventIndex < 0){     //  Disable GUI elements if no OpsEvent has been selected
             ImGui::BeginDisabled();
             selectedOpsEvent = &dummyEvent;
         }
@@ -720,7 +721,6 @@ int main(int, char**) {
         ImGui::Text("Squad Description:");
         if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
             ImGui::SetTooltip("Description (currently       \nnon-functional)");
-            // ImGui::SetTooltip("When selected, font size will\nautomatically be adjusted downward\nto fit within the event container");
         ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::InputTextWithHint("##description", "coming soon...", &dummyEvent.description, ImGuiInputTextFlags_ReadOnly);
@@ -745,14 +745,14 @@ int main(int, char**) {
         if(ImGui::IsItemDeactivatedAfterEdit())
             redrawEventContainer = true;
         
-        const char *weekdaysArray[8] = { OpsEvent::returnWeekday(Monday),
-                                        OpsEvent::returnWeekday(Tuesday),
-                                        OpsEvent::returnWeekday(Wednesday),
-                                        OpsEvent::returnWeekday(Thursday),
-                                        OpsEvent::returnWeekday(Friday),
-                                        OpsEvent::returnWeekday(Saturday),
-                                        OpsEvent::returnWeekday(Sunday),
-                                        OpsEvent::returnWeekday(tbd) };
+        const char *weekdaysArray[8] = {    OpsEvent::returnWeekday(Monday),
+                                            OpsEvent::returnWeekday(Tuesday),
+                                            OpsEvent::returnWeekday(Wednesday),
+                                            OpsEvent::returnWeekday(Thursday),
+                                            OpsEvent::returnWeekday(Friday),
+                                            OpsEvent::returnWeekday(Saturday),
+                                            OpsEvent::returnWeekday(Sunday),
+                                            OpsEvent::returnWeekday(tbd)    };
         ImGui::Text("Weekday:");
         if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
             ImGui::SetTooltip("The day of the week the event\nwill take place");
@@ -765,7 +765,7 @@ int main(int, char**) {
             OpsEventWeekdayChanged = true;
         }
 
-        ImGui::EndDisabled();
+        ImGui::EndDisabled();       //  From here, GUI elements are enabled again
 
         ImGui::Text("Font size:");
         if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
