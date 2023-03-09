@@ -17,14 +17,13 @@
 #include "ImGUI/imgui_impl_opengl3.h"
 #include "ImGUI/imgui_stdlib.h"
 
-#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")     //  prevents console opening automatically
-
 //  TODO: fill out settings bar
 //  TODO: create OPS/layout/advanced settings tabs
 //  DONE: create custom text wrapping function
 //  DONE: create OPS data struct
 
 //  TODO: create log file
+//  TODO: add event container data (size, starting position and spacing) to project save file
 //  DONE: save/load schedule
 //  DONE: export schedule
 //  DONE: implement working directory
@@ -34,15 +33,19 @@
 //  DONE: add date and time of creation to exported schedule filename
 
 //  BUGS:
-//  - app crashes when previewROI in renderPreview() tries to access non-existant data when the parameters involved in size and position are too large
-//      - in addition, the app crashes when an image is loaded which is smaller than the original background image. This is caused by the same bug
 //  - with select container parameters and font sizes, the unify font size function doesn't work properly and allows a single character to overflow onto the next line
 //  - when the squad title/time occupies too many lines, the subsequent fields are pushed out of line compared to the same fields in different containers
-
+//  FIXED:
+//  - app crashes when previewROI in renderPreview() tries to access non-existant data when the parameters involved in size and position are too large
+//      - in addition, the app crashes when an image is loaded which is smaller than the original background image. This is caused by the same bug
 #define APP_VERSION "0.1.1"
 // #define DEBUG
 
 #define FINAL_BUILD
+
+#ifndef DEBUG
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")     //  prevents console opening automatically
+#endif
 
 enum Weekdays {
     Monday,
@@ -157,6 +160,7 @@ class EventContainer{
     std::vector<OpsEvent*> scheduledEvents;     //  At the moment, event containers only support a single OpsEvent
     cv::Mat renderfield = cv::Mat(300, 75, CV_8UC4, cv::Scalar(0, 255, 0, 255));
     int pos[2] = { 10, 20 };
+    int horizontalSpacing = 36, verticalSpacing = 0;
 
     EventContainer();
     EventContainer(int renderfieldWidth = 75, int renderfieldHeight = 300) : width(renderfieldWidth), height(renderfieldHeight) { changeRenderfieldSize(renderfieldWidth, renderfieldHeight); };
@@ -230,13 +234,11 @@ class EventContainer{
         width = newWidth; height = newHeight;
         renderfield = cv::Scalar(0, 0, 0, 255);
         cv::resize(renderfield, renderfield, cv::Size(newWidth, newHeight));
-        drawText();
     }
     void changeRenderfieldSize(int newWidth, int newHeight, cv::FontFace &newFont){
         width = newWidth; height = newHeight;
         renderfield = cv::Scalar(0, 0, 0, 255);
         cv::resize(renderfield, renderfield, cv::Size(newWidth, newHeight));
-        drawText();
     }
     int getWidth(){
         return width;
@@ -279,11 +281,18 @@ class EventContainer{
 };
 void renderPreview(std::vector<EventContainer> &containers, const cv::Mat &background, cv::Mat &preview, int &globalFontSize, bool unifyFontSize = false, bool isPreview = true){
     preview = background.clone();
+    int totalWidthOfContainers = containers[0].pos[0] - containers[0].horizontalSpacing;
 
     //  needs to be done before drawing any of the text, to ensure all containers use the same size font
-    for(int i = 0; i < containers.size(); ++i)
+    for(int i = 0; i < containers.size(); ++i){
+        totalWidthOfContainers += containers[i].getWidth() + containers[i].horizontalSpacing;
+        if(totalWidthOfContainers > preview.cols){
+            tinyfd_messageBox("Warning", "Event container position, size or spacing  too large.", "ok", "warning", 1);
+            return;
+        }
         if(containers[i].setGlobalFontSize(globalFontSize, unifyFontSize))
             i = -1;      //  if font size was changed, reiterate over all containers to ensure the font size is up to date
+    }
     
     for(auto &container : containers){
         container.drawText(isPreview);
@@ -291,13 +300,18 @@ void renderPreview(std::vector<EventContainer> &containers, const cv::Mat &backg
         cv::add(container.renderfield, previewROI, previewROI);
     }
 }
-void setContainerSpacing(std::vector<EventContainer> &containers, int startPos[2], int horizontalSpacing, int verticalSpacing = 0){
-    for(int i = 0; i < containers.size(); i++){
-        containers[i].pos[0] = startPos[0] + i * (horizontalSpacing + containers[i].getWidth());
-        if(verticalSpacing)
-            containers[i].pos[1] = startPos[1] + i * (verticalSpacing + containers[i].getHeight());
-        else
-            containers[i].pos[1] = startPos[1];
+void setContainerSpacing(std::vector<EventContainer> &containers, int startPos[2]){
+    int containerPosX = startPos[0], containerPosY = startPos[1];
+    containers[0].pos[0] = startPos[0];
+    containers[0].pos[1] = startPos[1];
+
+    for(int i = 1; i < containers.size(); i++){
+        containerPosX += containers[i].horizontalSpacing + containers[i].getWidth();
+        if(containers[i].verticalSpacing)
+            containerPosY += containers[i].verticalSpacing + containers[i].getHeight();
+
+        containers[i].pos[0] = containerPosX;
+        containers[i].pos[1] = containerPosY;
     }
 }
 void rebindOpsEvents(std::vector<OpsEvent> &opsEvents, std::vector<EventContainer> &eventContainers){
@@ -401,7 +415,7 @@ bool OpsEventWeekdayChanged = false;
 std::vector<EventContainer> eventContainers;
 int firstEventContainerPos[2] = { 25, 295 };
 int eventContainerSize[2] = { 250, 755 };
-int eventCeventContainerHorizontalSpacing = 36, eventCeventContainerVerticalSpacing = 0;
+int eventContainerHorizontalSpacing = 36, eventContainerVerticalSpacing = 0;
 bool showEventContainerBoundingBox = true;
 bool eventContainerParametersChanged = false;
 bool redrawEventContainer = false;
@@ -505,7 +519,7 @@ int main(int, char**) {
     }
 #endif
 
-    setContainerSpacing(eventContainers, firstEventContainerPos, eventCeventContainerHorizontalSpacing);
+    setContainerSpacing(eventContainers, firstEventContainerPos);
     renderPreview(eventContainers, scheduleBackground, schedulePreview, fontSize);
     LoadTextureToMemory(schedulePreview, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
 
@@ -598,6 +612,7 @@ int main(int, char**) {
             if(filepathInput) schedulePath = filepathInput;
             scheduleBackground = cv::imread(schedulePath, cv::IMREAD_COLOR);
             LoadTextureToMemory(scheduleBackground, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
+            redrawEventContainer = true;
         }
 
         //  End schedule preview window
@@ -631,7 +646,7 @@ int main(int, char**) {
             ImGui::SetTooltip("The amount of space between the\ncontainers, in pixels");
         ImGui::SameLine(ImGui::GetContentRegionMax().x - 140);
         ImGui::SetNextItemWidth(140);
-        ImGui::InputInt("##container_horizontal_spacing", &eventCeventContainerHorizontalSpacing, 0);
+        ImGui::InputInt("##container_horizontal_spacing", &eventContainerHorizontalSpacing, 0);
         if(ImGui::IsItemDeactivatedAfterEdit())
             eventContainerParametersChanged = true;
 
@@ -799,8 +814,10 @@ int main(int, char**) {
             for (auto &eventContainer : eventContainers)
             {
                 eventContainer.changeRenderfieldSize(eventContainerSize[0], eventContainerSize[1]);
+                eventContainer.horizontalSpacing = eventContainerHorizontalSpacing;
+                eventContainer.verticalSpacing = eventContainerVerticalSpacing;
             }
-            setContainerSpacing(eventContainers, firstEventContainerPos, eventCeventContainerHorizontalSpacing);
+            setContainerSpacing(eventContainers, firstEventContainerPos);
 
             redrawEventContainer = true;
             eventContainerParametersChanged = false;
@@ -891,11 +908,11 @@ void loadSettings(std::ifstream &inStream){
         }else if(settingsTag == "container-spacing"){
             std::getline(inStream, params);
             std::istringstream iss(params);
-            if(!(iss >> eventCeventContainerHorizontalSpacing >> eventCeventContainerVerticalSpacing)){
+            if(!(iss >> eventContainerHorizontalSpacing >> eventContainerVerticalSpacing)){
                 std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
                 continue;
             }
-            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, eventCeventContainerHorizontalSpacing << " " << eventCeventContainerVerticalSpacing)
+            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, eventContainerHorizontalSpacing << " " << eventContainerVerticalSpacing)
         }else if(settingsTag == "show-container-bounding-box"){
             std::getline(inStream, params);
             std::istringstream iss(params);
@@ -936,7 +953,7 @@ void saveSettings(std::ofstream &outStream){
     outStream << "\nEvent container settings:" << std::endl;
     outStream << "first-container-pos\n" << firstEventContainerPos[0] << " " << firstEventContainerPos[1] << std::endl;
     outStream << "container-size\n" << eventContainerSize[0] << " " << eventContainerSize[1] << std::endl;
-    outStream << "container-spacing\n" << eventCeventContainerHorizontalSpacing << " " << eventCeventContainerVerticalSpacing << std::endl;
+    outStream << "container-spacing\n" << eventContainerHorizontalSpacing << " " << eventContainerVerticalSpacing << std::endl;
     outStream << "show-container-bounding-box\n" << showEventContainerBoundingBox << std::endl;
 
     outStream << "\nFile locations:" << std::endl;
