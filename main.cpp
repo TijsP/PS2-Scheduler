@@ -591,6 +591,7 @@ int main(int, char**) {
                 std::ifstream loadEventsStream(projectLoadPath);
                 loadOpsEvents(loadEventsStream, OpsEvents);
                 OpsEventAdded = true;
+                eventContainerParametersChanged = true;
             }
         }
         if(exportSchedule){
@@ -889,30 +890,6 @@ void loadSettings(std::ifstream &inStream){
                 continue;
             }
             DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, fontSize)
-        }else if(settingsTag == "first-container-pos"){
-            std::getline(inStream, params);
-            std::istringstream iss(params);
-            if(!(iss >> firstEventContainerPos[0] >> firstEventContainerPos[1])){
-                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
-                continue;
-            }
-            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, firstEventContainerPos[0] << " " << firstEventContainerPos[1])
-        }else if(settingsTag == "container-size"){
-            std::getline(inStream, params);
-            std::istringstream iss(params);
-            if(!(iss >> eventContainerSize[0] >> eventContainerSize[1])){
-                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
-                continue;
-            }
-            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, eventContainerSize[0] << " " << eventContainerSize[1])
-        }else if(settingsTag == "container-spacing"){
-            std::getline(inStream, params);
-            std::istringstream iss(params);
-            if(!(iss >> eventContainerHorizontalSpacing >> eventContainerVerticalSpacing)){
-                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
-                continue;
-            }
-            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, eventContainerHorizontalSpacing << " " << eventContainerVerticalSpacing)
         }else if(settingsTag == "show-container-bounding-box"){
             std::getline(inStream, params);
             std::istringstream iss(params);
@@ -951,9 +928,6 @@ void saveSettings(std::ofstream &outStream){
     outStream << "font-size\n" << fontSize << std::endl;
 
     outStream << "\nEvent container settings:" << std::endl;
-    outStream << "first-container-pos\n" << firstEventContainerPos[0] << " " << firstEventContainerPos[1] << std::endl;
-    outStream << "container-size\n" << eventContainerSize[0] << " " << eventContainerSize[1] << std::endl;
-    outStream << "container-spacing\n" << eventContainerHorizontalSpacing << " " << eventContainerVerticalSpacing << std::endl;
     outStream << "show-container-bounding-box\n" << showEventContainerBoundingBox << std::endl;
 
     outStream << "\nFile locations:" << std::endl;
@@ -986,6 +960,30 @@ void loadOpsEvents(std::ifstream &inStream, std::vector<OpsEvent> &opsEvents){
                 continue;
             }
             DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, schedulePath)
+        }else if(settingsTag == "first-container-pos"){
+            std::getline(inStream, params);
+            std::istringstream iss(params);
+            if(!(iss >> firstEventContainerPos[0] >> firstEventContainerPos[1])){
+                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
+                continue;
+            }
+            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, firstEventContainerPos[0] << " " << firstEventContainerPos[1])
+        }else if(settingsTag == "container-size"){
+            std::getline(inStream, params);
+            std::istringstream iss(params);
+            if(!(iss >> eventContainerSize[0] >> eventContainerSize[1])){
+                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
+                continue;
+            }
+            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, eventContainerSize[0] << " " << eventContainerSize[1])
+        }else if(settingsTag == "container-spacing"){
+            std::getline(inStream, params);
+            std::istringstream iss(params);
+            if(!(iss >> eventContainerHorizontalSpacing >> eventContainerVerticalSpacing)){
+                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
+                continue;
+            }
+            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, eventContainerHorizontalSpacing << " " << eventContainerVerticalSpacing)
         }
 
         else if(settingsTag == ""){
@@ -1005,4 +1003,9 @@ void saveOpsEvents(std::ofstream &outStream, const std::vector<OpsEvent> &opsEve
     
     outStream << "Image paths:" << std::endl;
     outStream << "schedule background:\n" << schedulePath << std::endl;
+
+    outStream << "\nEvent container settings:" << std::endl;
+    outStream << "first-container-pos\n" << firstEventContainerPos[0] << " " << firstEventContainerPos[1] << std::endl;
+    outStream << "container-size\n" << eventContainerSize[0] << " " << eventContainerSize[1] << std::endl;
+    outStream << "container-spacing\n" << eventContainerHorizontalSpacing << " " << eventContainerVerticalSpacing << std::endl;
 }
