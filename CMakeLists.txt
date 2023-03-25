@@ -10,7 +10,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-set(glfw3_DIR "C:\\Program Files\\GLFW\\lib\\cmake\\glfw3")
+# set(glfw3_DIR "C:\\Program Files\\GLFW\\lib\\cmake\\glfw3")
 
 aux_source_directory(ImGUI imgui)
 aux_source_directory(TinyFD tinyfd)
@@ -20,12 +20,13 @@ find_package( OpenCV 5.0.0 REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 find_package( OpenGL REQUIRED)
 
-option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+add_subdirectory(EventUtils)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-add_executable(PS2-Scheduler main.cpp ${imgui} ${tinyfd})
+# set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+add_executable(${PROJECT_NAME} main.cpp ${imgui} ${tinyfd})
 
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} glfw OpenGL::GL )
+target_link_libraries(${PROJECT_NAME} EventUtils ${OpenCV_LIBS} glfw OpenGL::GL)
+target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/EventUtils" )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

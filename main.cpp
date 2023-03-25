@@ -17,13 +17,21 @@
 #include "ImGUI/imgui_impl_opengl3.h"
 #include "ImGUI/imgui_stdlib.h"
 
+// #include "EventUtils/OpsEvent.hpp"
+// #include "EventUtils/EventContainer.hpp"
+#include "EventContainer.hpp"
+#include "OpsEvent.hpp"
+
+using namespace events;
+
 //  TODO: fill out settings bar
 //  TODO: create OPS/layout/advanced settings tabs
 //  DONE: create custom text wrapping function
 //  DONE: create OPS data struct
 
 //  TODO: create log file
-//  TODO: add event container data (size, starting position and spacing) to project save file
+//  TODO: add "make settings default" option for schedule background and event container parameters
+//  DONE: add event container data (size, starting position and spacing) to project save file
 //  DONE: save/load schedule
 //  DONE: export schedule
 //  DONE: implement working directory
@@ -47,238 +55,6 @@
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")     //  prevents console opening automatically
 #endif
 
-enum Weekdays {
-    Monday,
-    Tuesday,
-    Wednesday,
-    Thursday,
-    Friday,
-    Saturday,
-    Sunday,
-    tbd
-};
-std::ostream &operator<<(std::ostream &output, const Weekdays &weekday){
-    int weekdayInt = weekday;
-    output << weekdayInt;
-    return output;
-}
-std::istream &operator>>(std::istream &input, Weekdays &weekday){
-    int weekdayInt;
-    input >> weekdayInt;
-    weekday = (Weekdays)weekdayInt;
-    return input;
-}
-
-class EventContainer;
-
-struct OpsEvent{
-    
-    //  Rendered variables, unlike their base version, contain newline characters
-    Weekdays weekday = Monday;
-    std::string title = "";
-    std::string renderedTitle = "";
-    std::string description = "";
-    std::string renderedDescription = "";
-    std::string leader = "";
-    std::string renderedLeader = "";
-    std::string time = "";
-    std::string renderedTime = "";
-
-    OpsEvent(std::string title, std::string leader, Weekdays weekday, std::string time = "", std::string description = "") : title(title), description(description), leader(leader), time(time), weekday(weekday) { }
-
-    OpsEvent &operator= (const OpsEvent &rhs){
-        weekday = rhs.weekday;
-        title = rhs.title;
-        description = rhs.description;
-        leader = rhs.leader;
-        time = rhs.time;
-
-        return *this;
-    }
-
-    const static char *returnWeekday(Weekdays weekdayOfInterest){
-        switch (weekdayOfInterest)
-        {
-        case Monday:
-            return "Monday";
-            break;
-        case Tuesday:
-            return "Tuesday";
-            break;
-        case Wednesday:
-            return "Wednesday";
-            break;
-        case Thursday:
-            return "Thursday";
-            break;
-        case Friday:
-            return "Friday";
-            break;
-        case Saturday:
-            return "Saturday";
-            break;
-        case Sunday:
-            return "Sunday";
-            break;
-        case tbd:
-            return "t.b.d.";
-            break;
-        
-        default:
-            return "Invalid";
-            break;
-        }
-    }
-
-};
-std::ostream &operator<<(std::ostream &output, const OpsEvent &opsevent){
-    //  "/u009C" is the unicode character for unit separator
-    output << opsevent.title << "\t" << opsevent.description << "\t" << opsevent.leader << "\t" << opsevent.time << "\t" << opsevent.weekday;
-    return output;
-}
-std::istream &operator>>(std::istream &input, OpsEvent &opsevent){
-    std::getline(input, opsevent.title, '\t');
-    std::getline(input, opsevent.description, '\t');
-    std::getline(input, opsevent.leader, '\t');
-    std::getline(input, opsevent.time, '\t');
-    input >> opsevent.weekday;
-    
-    return input;
-}
-bool compareByWeekday (const OpsEvent &lhs, const OpsEvent &rhs){
-    return lhs.weekday < rhs.weekday;
-}
-
-class EventContainer{
-    private:
-    cv::FontFace &font = cv::FontFace("Times New Roman");
-    int fontSize = 60;
-    int width = 75, height = 300;
-
-    public:
-    Weekdays weekday = tbd;
-    std::vector<OpsEvent*> scheduledEvents;     //  At the moment, event containers only support a single OpsEvent
-    cv::Mat renderfield = cv::Mat(300, 75, CV_8UC4, cv::Scalar(0, 255, 0, 255));
-    int pos[2] = { 10, 20 };
-    int horizontalSpacing = 36, verticalSpacing = 0;
-
-    EventContainer();
-    EventContainer(int renderfieldWidth = 75, int renderfieldHeight = 300) : width(renderfieldWidth), height(renderfieldHeight) { changeRenderfieldSize(renderfieldWidth, renderfieldHeight); };
-
-    void setFontSize(int newFontSize){
-        fontSize = newFontSize;
-        drawText();
-    }
-    int getFontSize(){ return fontSize; }
-    void setFont(cv::FontFace &newFont){
-        font = newFont;
-        drawText();
-    }
-    bool setGlobalFontSize(int &globalFontSize, bool unifyFontSize){
-        bool fontSizeWasChanged = false;
-        fontSize = globalFontSize;
-        if(unifyFontSize){
-            for(auto &event : scheduledEvents){
-                float fontScaleFactor = 1.0f;
-
-                int largestWidth = 0;
-                int titleTextWidth = 0;
-                wrapString(event->title, &titleTextWidth);
-                int timeTextWidth = 0;
-                wrapString(event->time, &timeTextWidth);
-                int leaderTextWidth = 0;
-                wrapString(event->leader, &leaderTextWidth);
-
-                largestWidth = (titleTextWidth > largestWidth) ? titleTextWidth : largestWidth;
-                largestWidth = (timeTextWidth > largestWidth) ? timeTextWidth : largestWidth;
-                largestWidth = (leaderTextWidth > largestWidth) ? leaderTextWidth : largestWidth;
-
-                if(largestWidth > width)
-                    fontScaleFactor = (float)width / largestWidth;
-                
-                fontSize = globalFontSize * fontScaleFactor;
-                if(fontSize != globalFontSize)
-                    fontSizeWasChanged = true;
-                globalFontSize = fontSize;
-#ifdef DEBUG
-                std::cout << "font size set to: " << fontSize << std::endl;
-#endif
-            }
-        }
-
-        return fontSizeWasChanged;
-    }
-    void setFont(cv::FontFace &newFont, int size){
-        setFontSize(size);
-        setFont(newFont);
-    }
-
-    bool drawText(bool isPreview = true){
-        renderfield = cv::Scalar(0, 0, 0, 0);
-        if(isPreview)
-            cv::rectangle(renderfield, cv::Rect(0, 0, width, height), cv::Scalar(0, 255, 0, 255), 4);
-        if(scheduledEvents.size() == 0){
-#ifdef DEBUG
-            std::cout << "No events found!" << std::endl;
-#endif
-            return false;
-            }
-
-        std::string opsText = wrapString(scheduledEvents[0]->title) + "\n" + wrapString(scheduledEvents[0]->description) + "\n" + wrapString(scheduledEvents[0]->time) + "\n" + wrapString(scheduledEvents[0]->leader) + " ";
-        cv::putText(renderfield, opsText, cv::Point(0, fontSize), cv::Scalar(251, 255, 140, 255), font, fontSize, 390, cv::PUT_TEXT_WRAP, cv::Range(0, width));
-        
-        return true;
-    }
-
-    void changeRenderfieldSize(int newWidth, int newHeight){
-        width = newWidth; height = newHeight;
-        renderfield = cv::Scalar(0, 0, 0, 255);
-        cv::resize(renderfield, renderfield, cv::Size(newWidth, newHeight));
-    }
-    void changeRenderfieldSize(int newWidth, int newHeight, cv::FontFace &newFont){
-        width = newWidth; height = newHeight;
-        renderfield = cv::Scalar(0, 0, 0, 255);
-        cv::resize(renderfield, renderfield, cv::Size(newWidth, newHeight));
-    }
-    int getWidth(){
-        return width;
-    }
-    int getHeight(){
-        return height;
-    }
-
-    private:
-    std::string wrapString(const std::string &text, int *largestWordWidth = nullptr){
-        std::string wrappedText;
-        std::string word = "";
-        std::istringstream textStream(text);
-        int largestWidth = 0;
-        int currentLineWidth = 0;
-        int spaceWidth = cv::getTextSize(cv::Size(), " ", cv::Point(0, fontSize), font, fontSize, 350).width;
-
-        wrappedText.clear();
-        while (textStream >> word)
-        {
-            int wordWidth = cv::getTextSize(cv::Size(), word, cv::Point(0, fontSize), font, fontSize, 350).width;
-            if(wordWidth > largestWidth)
-                largestWidth = wordWidth;
-            
-            if(currentLineWidth == 0){
-                currentLineWidth += wordWidth;
-                wrappedText.append(word);
-            }else if(currentLineWidth + spaceWidth + wordWidth > width){
-                wrappedText.append("\n" + word);
-                currentLineWidth = wordWidth;
-            }else{
-                currentLineWidth += spaceWidth + wordWidth;
-                wrappedText.append(" " + word);
-            }
-        }
-        if(largestWordWidth)        //  if the pointer has been set
-            *largestWordWidth = largestWidth;
-        return wrappedText;
-    }
-};
 void renderPreview(std::vector<EventContainer> &containers, const cv::Mat &background, cv::Mat &preview, int &globalFontSize, bool unifyFontSize = false, bool isPreview = true){
     preview = background.clone();
     int totalWidthOfContainers = containers[0].pos[0] - containers[0].horizontalSpacing;
@@ -420,7 +196,8 @@ bool showEventContainerBoundingBox = true;
 bool eventContainerParametersChanged = false;
 bool redrawEventContainer = false;
 
-std::string workingDirectoryPath = std::filesystem::current_path().string();
+// std::string workingDirectoryPath = std::filesystem::current_path().string();
+std::string workingDirectoryPath = "D:\\Users\\TijsP\\Programming\\C++\\Projects\\PS2-Scheduler\\build\\Release";
 std::string schedulePath = workingDirectoryPath + "\\TXLC_Planning.png";
 
 int main(int, char**) {
