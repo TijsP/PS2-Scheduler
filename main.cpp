@@ -49,8 +49,6 @@ using namespace events;
 #define APP_VERSION "0.1.1"
 // #define DEBUG
 
-#define FINAL_BUILD
-
 #ifndef DEBUG
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")     //  prevents console opening automatically
 #endif
@@ -447,7 +445,7 @@ int main(int, char**) {
             ImGui::TableHeadersRow();
 
             ImGuiListClipper clipper;
-            clipper.Begin(OpsEvents.size());
+            clipper.Begin(OpsEvents.size(), ImGui::GetFrameHeightWithSpacing());
             while (clipper.Step())
             {
                 for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
