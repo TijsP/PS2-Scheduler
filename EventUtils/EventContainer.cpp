@@ -1,12 +1,21 @@
 #include "EventContainer.hpp"
 // #include "opencv2/opencv.hpp"
 
-events::EventContainer::EventContainer(){
+events::EventContainer::EventContainer() : EventContainer(75, 300){ }
 
-}
-events::EventContainer::EventContainer(int renderfieldWidth, int renderfieldHeight) : width(renderfieldWidth), height(renderfieldHeight){
+events::EventContainer::EventContainer(int renderfieldWidth, int renderfieldHeight) : 
+    font(cv::FontFace("Times New Roman")),
+    fontSize(60),
+    width(75), height(300),
+
+    weekday(tbd),
+    renderfield(cv::Mat(height, width, CV_8UC4, cv::Scalar(0, 255, 0, 255))),
+    pos{ 10, 20 },
+    horizontalSpacing(36), verticalSpacing(0)
+{
     changeRenderfieldSize(renderfieldWidth, renderfieldHeight);
 }
+
 void events::EventContainer::setFontSize(int newFontSize){
         fontSize = newFontSize;
         drawText();
@@ -84,7 +93,6 @@ void events::EventContainer::changeRenderfieldSize(int newWidth, int newHeight, 
     renderfield = cv::Scalar(0, 0, 0, 255);
     cv::resize(renderfield, renderfield, cv::Size(newWidth, newHeight));
 }
-
 int events::EventContainer::getWidth(){
     return width;
 }

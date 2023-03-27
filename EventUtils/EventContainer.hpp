@@ -27,8 +27,8 @@ namespace events{
         int pos[2];
         int horizontalSpacing, verticalSpacing;
 
+        EventContainer(int renderfieldWidth, int renderfieldHeight);
         EventContainer();
-        EventContainer(int renderfieldWidth = 75, int renderfieldHeight = 300);
 
         void setFontSize(int newFontSize);
         int getFontSize();

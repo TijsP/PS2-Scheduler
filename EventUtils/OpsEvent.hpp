@@ -20,7 +20,7 @@ namespace events{
     std::istream &operator>>(std::istream &input, Weekdays &weekday);
 
     struct OpsEvent{
-        Weekdays weekday = Monday;
+        Weekdays weekday;
         std::string title;
         std::string renderedTitle;
         std::string description;

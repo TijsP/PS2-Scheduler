@@ -11,7 +11,17 @@ std::istream &events::operator>>(std::istream &input, Weekdays &weekday){
     weekday = (Weekdays)weekdayInt;
     return input;
 }
-events::OpsEvent::OpsEvent(std::string title, std::string leader, events::Weekdays weekday, std::string time, std::string description) : title(title), description(description), leader(leader), time(time), weekday(weekday) { }
+
+events::OpsEvent::OpsEvent(std::string title, std::string leader, events::Weekdays weekday, std::string time, std::string description) : 
+    title(title),
+    renderedTitle(""),
+    description(description),
+    renderedDescription(""),
+    leader(leader),
+    renderedLeader(""),
+    time(time),
+    renderedTime(""),
+    weekday(weekday) { }
 const char *events::OpsEvent::returnWeekday(events::Weekdays weekdayOfInterest){
         switch (weekdayOfInterest)
         {
