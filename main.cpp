@@ -194,16 +194,16 @@ bool showEventContainerBoundingBox = true;
 bool eventContainerParametersChanged = false;
 bool redrawEventContainer = false;
 
-// std::string workingDirectoryPath = std::filesystem::current_path().string();
-std::string workingDirectoryPath = "D:\\Users\\TijsP\\Programming\\C++\\Projects\\PS2-Scheduler\\build\\Release";
-std::string schedulePath = workingDirectoryPath + "\\TXLC_Planning.png";
+std::filesystem::path path = std::filesystem::current_path().parent_path();
+std::string workingDirectoryPath = path.string();
+std::string schedulePath = workingDirectoryPath + "/TXLC_Planning.png";
 
 int main(int, char**) {
     std::time_t currentTime = std::time({});
     std::ofstream saveSettingsStream;
     std::ifstream loadSettingsStream;
 
-    loadSettingsStream.open("settings.ini");
+    loadSettingsStream.open(workingDirectoryPath + "/settings.ini");
     loadSettings(loadSettingsStream);
     loadSettingsStream.close();
     
@@ -262,6 +262,10 @@ int main(int, char**) {
     int windowsX = 0;
 
     cv::Mat scheduleBackground = cv::imread(schedulePath, cv::IMREAD_COLOR);
+    if(scheduleBackground.empty()){
+        scheduleBackground = cv::Mat(cv::Mat(9, 16, CV_8UC4, cv::Scalar(255, 255, 255, 255)));
+        tinyfd_messageBox("Warning", "Could not find default schedule background, please select a new one.", "ok", "warning", 1);
+    }
     cv::cvtColor(scheduleBackground, scheduleBackground, cv::COLOR_RGB2RGBA);
     cv::Mat schedulePreview = scheduleBackground.clone();
     GLuint schedulePreviewID;
@@ -345,11 +349,11 @@ int main(int, char**) {
         /*  GUI functions  */
         if(selectWorkingDirectoryPath){
             char *directoryPathInput = tinyfd_selectFolderDialog("Select working directory", workingDirectoryPath.c_str());
-            if(directoryPathInput) workingDirectoryPath = directoryPathInput;// strcpy_s(workingDirectoryPath, sizeof(workingDirectoryPath), directoryPathInput);
+            if(directoryPathInput) workingDirectoryPath = directoryPathInput;
         }
         if(saveSchedule){ 
             std::string path = workingDirectoryPath;;
-            path.append("\\schedule_project.jpg");
+            path.append("/schedule_project.jpg");
 
             char *projectSavePath = tinyfd_saveFileDialog("Schedule project save location", path.c_str(), 1, saveFileFormats, "Project save file");
             if(projectSavePath){
@@ -359,7 +363,7 @@ int main(int, char**) {
         }
         if(loadSchedule){ 
             std::string path = workingDirectoryPath;
-            path.append("\\*.sav");
+            path.append("/*.sav");
             char *projectLoadPath = tinyfd_openFileDialog("Schedule project save location", path.c_str(), 1, saveFileFormats, "Project save file", 0);
             if(projectLoadPath){
                 OpsEvents.clear();
@@ -382,7 +386,7 @@ int main(int, char**) {
         }
         if(loadScheduleBackground){
             std::string path = workingDirectoryPath;
-            path.append("\\*.*");
+            path.append("/*.*");
             
             char *filepathInput = tinyfd_openFileDialog("Select schedule background", path.c_str(), 2, imageFilters, "image files", 0);
             if(filepathInput) schedulePath = filepathInput;
@@ -626,7 +630,7 @@ int main(int, char**) {
         glfwSwapBuffers(windowContainer);
     }
 
-    saveSettingsStream.open("settings.ini");
+    saveSettingsStream.open(workingDirectoryPath + "/settings.ini");
     saveSettings(saveSettingsStream);
     saveSettingsStream.close();
 
