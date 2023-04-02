@@ -374,7 +374,7 @@ int main(int, char**) {
             }
         }
         if(exportSchedule){
-            std::string fileName = "schedule_";
+            std::string fileName = "/schedule_";
             char date[std::size("YYYY-MM-DD_HHhMMm")];
             std::strftime(date, sizeof(date), "%F_%Hh%Mm", std::localtime(&currentTime));
             fileName.append(date);
@@ -382,7 +382,7 @@ int main(int, char**) {
 
             cv::Mat scheduleDefinitive = scheduleBackground.clone();
             renderPreview(eventContainers, scheduleBackground, scheduleDefinitive, fontSize, unifyFontSize, false);
-            cv::imwrite(fileName, scheduleDefinitive);
+            cv::imwrite(workingDirectoryPath + fileName, scheduleDefinitive);
         }
         if(loadScheduleBackground){
             std::string path = workingDirectoryPath;
