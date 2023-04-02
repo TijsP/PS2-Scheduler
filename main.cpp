@@ -235,7 +235,7 @@ int main(int, char**) {
         return 1;
     
     std::string appName = "PS2 Squad Scheduler v";
-    appName.append(APP_VERSION);
+    appName.append(SCHEDULER_VERSION);
     GLFWwindow *windowContainer = glfwCreateWindow(currentWindowWidth, currentWindowHeight, appName.c_str(), NULL, NULL);
     if(windowContainer == NULL)
         return 1;
