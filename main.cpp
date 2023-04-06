@@ -7,6 +7,8 @@
 #include <ctime>
 #include <any>
 
+#include "windows.h"
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <GLFW/glfw3.h>
@@ -196,7 +198,7 @@ bool redrawEventContainer = false;
 
 std::filesystem::path settingsPath = (std::string) std::getenv("USERPROFILE") + "/Documents/PS2 Scheduler/settings.ini";
 std::filesystem::path workingDirectoryPath = settingsPath.parent_path();
-std::filesystem::path schedulePath = std::filesystem::current_path().parent_path() / "TXLC_Planning.png";
+std::filesystem::path schedulePath = "";
 
 int main(int, char**) {
     std::time_t currentTime = std::time({});
@@ -210,6 +212,14 @@ int main(int, char**) {
     settingsPath.make_preferred();
     workingDirectoryPath.make_preferred();
     std::filesystem::create_directory(workingDirectoryPath);
+    char pathBuffer[MAX_PATH + 1];
+    GetModuleFileNameA(NULL, pathBuffer, MAX_PATH);
+    schedulePath = pathBuffer;
+    schedulePath = schedulePath.parent_path() / "TXLC_Planning.png";
+
+#ifdef DEBUG
+    std::cout << "schedule path: " << schedulePath << std::endl;
+#endif
     
 
 #if defined(IMGUI_IMPL_OPENGL_ES2)
