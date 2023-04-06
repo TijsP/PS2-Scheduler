@@ -7,6 +7,8 @@
 #include <ctime>
 #include <any>
 
+#include "windows.h"
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <GLFW/glfw3.h>
@@ -17,13 +19,21 @@
 #include "ImGUI/imgui_impl_opengl3.h"
 #include "ImGUI/imgui_stdlib.h"
 
+// #include "EventUtils/OpsEvent.hpp"
+// #include "EventUtils/EventContainer.hpp"
+#include "EventContainer.hpp"
+#include "OpsEvent.hpp"
+
+using namespace events;
+
 //  TODO: fill out settings bar
 //  TODO: create OPS/layout/advanced settings tabs
 //  DONE: create custom text wrapping function
 //  DONE: create OPS data struct
 
 //  TODO: create log file
-//  TODO: add event container data (size, starting position and spacing) to project save file
+//  TODO: add "make settings default" option for schedule background and event container parameters
+//  DONE: add event container data (size, starting position and spacing) to project save file
 //  DONE: save/load schedule
 //  DONE: export schedule
 //  DONE: implement working directory
@@ -41,244 +51,10 @@
 #define APP_VERSION "0.1.1"
 // #define DEBUG
 
-#define FINAL_BUILD
-
 #ifndef DEBUG
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")     //  prevents console opening automatically
 #endif
 
-enum Weekdays {
-    Monday,
-    Tuesday,
-    Wednesday,
-    Thursday,
-    Friday,
-    Saturday,
-    Sunday,
-    tbd
-};
-std::ostream &operator<<(std::ostream &output, const Weekdays &weekday){
-    int weekdayInt = weekday;
-    output << weekdayInt;
-    return output;
-}
-std::istream &operator>>(std::istream &input, Weekdays &weekday){
-    int weekdayInt;
-    input >> weekdayInt;
-    weekday = (Weekdays)weekdayInt;
-    return input;
-}
-
-class EventContainer;
-
-struct OpsEvent{
-    
-    //  Rendered variables, unlike their base version, contain newline characters
-    Weekdays weekday = Monday;
-    std::string title = "";
-    std::string renderedTitle = "";
-    std::string description = "";
-    std::string renderedDescription = "";
-    std::string leader = "";
-    std::string renderedLeader = "";
-    std::string time = "";
-    std::string renderedTime = "";
-
-    OpsEvent(std::string title, std::string leader, Weekdays weekday, std::string time = "", std::string description = "") : title(title), description(description), leader(leader), time(time), weekday(weekday) { }
-
-    OpsEvent &operator= (const OpsEvent &rhs){
-        weekday = rhs.weekday;
-        title = rhs.title;
-        description = rhs.description;
-        leader = rhs.leader;
-        time = rhs.time;
-
-        return *this;
-    }
-
-    const static char *returnWeekday(Weekdays weekdayOfInterest){
-        switch (weekdayOfInterest)
-        {
-        case Monday:
-            return "Monday";
-            break;
-        case Tuesday:
-            return "Tuesday";
-            break;
-        case Wednesday:
-            return "Wednesday";
-            break;
-        case Thursday:
-            return "Thursday";
-            break;
-        case Friday:
-            return "Friday";
-            break;
-        case Saturday:
-            return "Saturday";
-            break;
-        case Sunday:
-            return "Sunday";
-            break;
-        case tbd:
-            return "t.b.d.";
-            break;
-        
-        default:
-            return "Invalid";
-            break;
-        }
-    }
-
-};
-std::ostream &operator<<(std::ostream &output, const OpsEvent &opsevent){
-    //  "/u009C" is the unicode character for unit separator
-    output << opsevent.title << "\t" << opsevent.description << "\t" << opsevent.leader << "\t" << opsevent.time << "\t" << opsevent.weekday;
-    return output;
-}
-std::istream &operator>>(std::istream &input, OpsEvent &opsevent){
-    std::getline(input, opsevent.title, '\t');
-    std::getline(input, opsevent.description, '\t');
-    std::getline(input, opsevent.leader, '\t');
-    std::getline(input, opsevent.time, '\t');
-    input >> opsevent.weekday;
-    
-    return input;
-}
-bool compareByWeekday (const OpsEvent &lhs, const OpsEvent &rhs){
-    return lhs.weekday < rhs.weekday;
-}
-
-class EventContainer{
-    private:
-    cv::FontFace &font = cv::FontFace("Times New Roman");
-    int fontSize = 60;
-    int width = 75, height = 300;
-
-    public:
-    Weekdays weekday = tbd;
-    std::vector<OpsEvent*> scheduledEvents;     //  At the moment, event containers only support a single OpsEvent
-    cv::Mat renderfield = cv::Mat(300, 75, CV_8UC4, cv::Scalar(0, 255, 0, 255));
-    int pos[2] = { 10, 20 };
-    int horizontalSpacing = 36, verticalSpacing = 0;
-
-    EventContainer();
-    EventContainer(int renderfieldWidth = 75, int renderfieldHeight = 300) : width(renderfieldWidth), height(renderfieldHeight) { changeRenderfieldSize(renderfieldWidth, renderfieldHeight); };
-
-    void setFontSize(int newFontSize){
-        fontSize = newFontSize;
-        drawText();
-    }
-    int getFontSize(){ return fontSize; }
-    void setFont(cv::FontFace &newFont){
-        font = newFont;
-        drawText();
-    }
-    bool setGlobalFontSize(int &globalFontSize, bool unifyFontSize){
-        bool fontSizeWasChanged = false;
-        fontSize = globalFontSize;
-        if(unifyFontSize){
-            for(auto &event : scheduledEvents){
-                float fontScaleFactor = 1.0f;
-
-                int largestWidth = 0;
-                int titleTextWidth = 0;
-                wrapString(event->title, &titleTextWidth);
-                int timeTextWidth = 0;
-                wrapString(event->time, &timeTextWidth);
-                int leaderTextWidth = 0;
-                wrapString(event->leader, &leaderTextWidth);
-
-                largestWidth = (titleTextWidth > largestWidth) ? titleTextWidth : largestWidth;
-                largestWidth = (timeTextWidth > largestWidth) ? timeTextWidth : largestWidth;
-                largestWidth = (leaderTextWidth > largestWidth) ? leaderTextWidth : largestWidth;
-
-                if(largestWidth > width)
-                    fontScaleFactor = (float)width / largestWidth;
-                
-                fontSize = globalFontSize * fontScaleFactor;
-                if(fontSize != globalFontSize)
-                    fontSizeWasChanged = true;
-                globalFontSize = fontSize;
-#ifdef DEBUG
-                std::cout << "font size set to: " << fontSize << std::endl;
-#endif
-            }
-        }
-
-        return fontSizeWasChanged;
-    }
-    void setFont(cv::FontFace &newFont, int size){
-        setFontSize(size);
-        setFont(newFont);
-    }
-
-    bool drawText(bool isPreview = true){
-        renderfield = cv::Scalar(0, 0, 0, 0);
-        if(isPreview)
-            cv::rectangle(renderfield, cv::Rect(0, 0, width, height), cv::Scalar(0, 255, 0, 255), 4);
-        if(scheduledEvents.size() == 0){
-#ifdef DEBUG
-            std::cout << "No events found!" << std::endl;
-#endif
-            return false;
-            }
-
-        std::string opsText = wrapString(scheduledEvents[0]->title) + "\n" + wrapString(scheduledEvents[0]->description) + "\n" + wrapString(scheduledEvents[0]->time) + "\n" + wrapString(scheduledEvents[0]->leader) + " ";
-        cv::putText(renderfield, opsText, cv::Point(0, fontSize), cv::Scalar(251, 255, 140, 255), font, fontSize, 390, cv::PUT_TEXT_WRAP, cv::Range(0, width));
-        
-        return true;
-    }
-
-    void changeRenderfieldSize(int newWidth, int newHeight){
-        width = newWidth; height = newHeight;
-        renderfield = cv::Scalar(0, 0, 0, 255);
-        cv::resize(renderfield, renderfield, cv::Size(newWidth, newHeight));
-    }
-    void changeRenderfieldSize(int newWidth, int newHeight, cv::FontFace &newFont){
-        width = newWidth; height = newHeight;
-        renderfield = cv::Scalar(0, 0, 0, 255);
-        cv::resize(renderfield, renderfield, cv::Size(newWidth, newHeight));
-    }
-    int getWidth(){
-        return width;
-    }
-    int getHeight(){
-        return height;
-    }
-
-    private:
-    std::string wrapString(const std::string &text, int *largestWordWidth = nullptr){
-        std::string wrappedText;
-        std::string word = "";
-        std::istringstream textStream(text);
-        int largestWidth = 0;
-        int currentLineWidth = 0;
-        int spaceWidth = cv::getTextSize(cv::Size(), " ", cv::Point(0, fontSize), font, fontSize, 350).width;
-
-        wrappedText.clear();
-        while (textStream >> word)
-        {
-            int wordWidth = cv::getTextSize(cv::Size(), word, cv::Point(0, fontSize), font, fontSize, 350).width;
-            if(wordWidth > largestWidth)
-                largestWidth = wordWidth;
-            
-            if(currentLineWidth == 0){
-                currentLineWidth += wordWidth;
-                wrappedText.append(word);
-            }else if(currentLineWidth + spaceWidth + wordWidth > width){
-                wrappedText.append("\n" + word);
-                currentLineWidth = wordWidth;
-            }else{
-                currentLineWidth += spaceWidth + wordWidth;
-                wrappedText.append(" " + word);
-            }
-        }
-        if(largestWordWidth)        //  if the pointer has been set
-            *largestWordWidth = largestWidth;
-        return wrappedText;
-    }
-};
 void renderPreview(std::vector<EventContainer> &containers, const cv::Mat &background, cv::Mat &preview, int &globalFontSize, bool unifyFontSize = false, bool isPreview = true){
     preview = background.clone();
     int totalWidthOfContainers = containers[0].pos[0] - containers[0].horizontalSpacing;
@@ -420,17 +196,30 @@ bool showEventContainerBoundingBox = true;
 bool eventContainerParametersChanged = false;
 bool redrawEventContainer = false;
 
-std::string workingDirectoryPath = std::filesystem::current_path().string();
-std::string schedulePath = workingDirectoryPath + "\\TXLC_Planning.png";
+std::filesystem::path settingsPath = (std::string) std::getenv("USERPROFILE") + "/Documents/PS2 Scheduler/settings.ini";
+std::filesystem::path workingDirectoryPath = settingsPath.parent_path();
+std::filesystem::path schedulePath = "";
 
 int main(int, char**) {
     std::time_t currentTime = std::time({});
     std::ofstream saveSettingsStream;
     std::ifstream loadSettingsStream;
 
-    loadSettingsStream.open("settings.ini");
+    loadSettingsStream.open(settingsPath);
     loadSettings(loadSettingsStream);
     loadSettingsStream.close();
+
+    settingsPath.make_preferred();
+    workingDirectoryPath.make_preferred();
+    std::filesystem::create_directory(workingDirectoryPath);
+    char pathBuffer[MAX_PATH + 1];
+    GetModuleFileNameA(NULL, pathBuffer, MAX_PATH);
+    schedulePath = pathBuffer;
+    schedulePath = schedulePath.parent_path() / "TXLC_Planning.png";
+
+#ifdef DEBUG
+    std::cout << "schedule path: " << schedulePath << std::endl;
+#endif
     
 
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -460,7 +249,7 @@ int main(int, char**) {
         return 1;
     
     std::string appName = "PS2 Squad Scheduler v";
-    appName.append(APP_VERSION);
+    appName.append(SCHEDULER_VERSION);
     GLFWwindow *windowContainer = glfwCreateWindow(currentWindowWidth, currentWindowHeight, appName.c_str(), NULL, NULL);
     if(windowContainer == NULL)
         return 1;
@@ -486,7 +275,11 @@ int main(int, char**) {
 
     int windowsX = 0;
 
-    cv::Mat scheduleBackground = cv::imread(schedulePath, cv::IMREAD_COLOR);
+    cv::Mat scheduleBackground = cv::imread(schedulePath.string(), cv::IMREAD_COLOR);
+    if(scheduleBackground.empty()){
+        scheduleBackground = cv::Mat(cv::Mat(9, 16, CV_8UC4, cv::Scalar(255, 255, 255, 255)));
+        tinyfd_messageBox("Warning", "Could not find default schedule background, please select a new one.", "ok", "warning", 1);
+    }
     cv::cvtColor(scheduleBackground, scheduleBackground, cv::COLOR_RGB2RGBA);
     cv::Mat schedulePreview = scheduleBackground.clone();
     GLuint schedulePreviewID;
@@ -552,13 +345,15 @@ int main(int, char**) {
         float windowPadding = mainStyle.WindowPadding.y;
 
         //  Schedule working directory
+        std::string pathString = workingDirectoryPath.string();
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Working directory:");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 150);
-        ImGui::InputTextWithHint("##working_directory", "Please select a working directory...", &workingDirectoryPath); if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip("Currently selected working directory");
+        ImGui::InputTextWithHint("##working_directory", "Please select a working directory...", &pathString); if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip("Currently selected working directory");
         ImGui::SameLine();
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+        workingDirectoryPath = std::filesystem::path(pathString).make_preferred();
         bool selectWorkingDirectoryPath = ImGui::Button("Select directory", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight())); if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip("Select main directory to save/load files from");
 
         float buttonWidth = (ImGui::GetContentRegionAvail().x - mainStyle.WindowPadding.x) / 3 - mainStyle.FramePadding.x;
@@ -569,23 +364,21 @@ int main(int, char**) {
 
         /*  GUI functions  */
         if(selectWorkingDirectoryPath){
-            char *directoryPathInput = tinyfd_selectFolderDialog("Select working directory", workingDirectoryPath.c_str());
-            if(directoryPathInput) workingDirectoryPath = directoryPathInput;// strcpy_s(workingDirectoryPath, sizeof(workingDirectoryPath), directoryPathInput);
+            char *directoryPathInput = tinyfd_selectFolderDialog("Select working directory", workingDirectoryPath.string().c_str());
+            if(directoryPathInput){
+                workingDirectoryPath = directoryPathInput;
+                workingDirectoryPath.make_preferred();
+                }
         }
         if(saveSchedule){ 
-            std::string path = workingDirectoryPath;;
-            path.append("\\schedule_project.jpg");
-
-            char *projectSavePath = tinyfd_saveFileDialog("Schedule project save location", path.c_str(), 1, saveFileFormats, "Project save file");
+            char *projectSavePath = tinyfd_saveFileDialog("Schedule project save location", (workingDirectoryPath / "schedule_project.sav").string().c_str(), 1, saveFileFormats, "Project save file");
             if(projectSavePath){
                 std::ofstream saveEventsStream(projectSavePath);
                 saveOpsEvents(saveEventsStream, OpsEvents);
             }
         }
         if(loadSchedule){ 
-            std::string path = workingDirectoryPath;
-            path.append("\\*.sav");
-            char *projectLoadPath = tinyfd_openFileDialog("Schedule project save location", path.c_str(), 1, saveFileFormats, "Project save file", 0);
+            char *projectLoadPath = tinyfd_openFileDialog("Schedule project save location", (workingDirectoryPath / "*.sav").string().c_str(), 1, saveFileFormats, "Project save file", 0);
             if(projectLoadPath){
                 OpsEvents.clear();
                 std::ifstream loadEventsStream(projectLoadPath);
@@ -595,7 +388,7 @@ int main(int, char**) {
             }
         }
         if(exportSchedule){
-            std::string fileName = "schedule_";
+            std::string fileName = "/schedule_";
             char date[std::size("YYYY-MM-DD_HHhMMm")];
             std::strftime(date, sizeof(date), "%F_%Hh%Mm", std::localtime(&currentTime));
             fileName.append(date);
@@ -603,17 +396,16 @@ int main(int, char**) {
 
             cv::Mat scheduleDefinitive = scheduleBackground.clone();
             renderPreview(eventContainers, scheduleBackground, scheduleDefinitive, fontSize, unifyFontSize, false);
-            cv::imwrite(fileName, scheduleDefinitive);
+            cv::imwrite((workingDirectoryPath / fileName).string(), scheduleDefinitive);
         }
         if(loadScheduleBackground){
-            std::string path = workingDirectoryPath;
-            path.append("\\*.*");
-            
-            char *filepathInput = tinyfd_openFileDialog("Select schedule background", path.c_str(), 2, imageFilters, "image files", 0);
-            if(filepathInput) schedulePath = filepathInput;
-            scheduleBackground = cv::imread(schedulePath, cv::IMREAD_COLOR);
-            LoadTextureToMemory(scheduleBackground, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
-            redrawEventContainer = true;
+            char *filepathInput = tinyfd_openFileDialog("Select schedule background", (workingDirectoryPath / "*.*").string().c_str(), 2, imageFilters, "image files", 0);
+            if(filepathInput){
+                schedulePath = std::filesystem::path(filepathInput);
+                scheduleBackground = cv::imread(schedulePath.string(), cv::IMREAD_COLOR);
+                LoadTextureToMemory(scheduleBackground, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
+                redrawEventContainer = true;
+            }
         }
 
         //  End schedule preview window
@@ -670,7 +462,7 @@ int main(int, char**) {
             ImGui::TableHeadersRow();
 
             ImGuiListClipper clipper;
-            clipper.Begin(OpsEvents.size());
+            clipper.Begin(OpsEvents.size(), ImGui::GetFrameHeightWithSpacing());
             while (clipper.Step())
             {
                 for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
@@ -851,7 +643,7 @@ int main(int, char**) {
         glfwSwapBuffers(windowContainer);
     }
 
-    saveSettingsStream.open("settings.ini");
+    saveSettingsStream.open(settingsPath);
     saveSettings(saveSettingsStream);
     saveSettingsStream.close();
 
@@ -899,7 +691,13 @@ void loadSettings(std::ifstream &inStream){
             }
             DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, showEventContainerBoundingBox)
         }else if(settingsTag == "working-directory-path"){
-            std::getline(inStream, workingDirectoryPath);
+            std::getline(inStream, params);
+            std::istringstream iss(params);
+            if(!(iss >> workingDirectoryPath)){
+                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
+                continue;
+            }
+            workingDirectoryPath.make_preferred();
             DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, workingDirectoryPath)
         }else if(settingsTag == "window-size"){
             std::getline(inStream, params);
