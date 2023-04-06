@@ -21,7 +21,7 @@ add_subdirectory(EventUtils)
 
 add_compile_definitions(SCHEDULER_VERSION="${PROJECT_VERSION}")
 
-add_executable(${PROJECT_NAME} main.cpp ${imgui} ${tinyfd})
+add_executable(${PROJECT_NAME} main.cpp ${imgui} ${tinyfd} ${PROJECT_SOURCE_DIR}/icon.rc)
 
 target_link_libraries(${PROJECT_NAME} EventUtils ${OpenCV_LIBS} glfw OpenGL::GL)
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/EventUtils" )
