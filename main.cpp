@@ -400,10 +400,12 @@ int main(int, char**) {
         }
         if(loadScheduleBackground){
             char *filepathInput = tinyfd_openFileDialog("Select schedule background", (workingDirectoryPath / "*.*").string().c_str(), 2, imageFilters, "image files", 0);
-            if(filepathInput) schedulePath = std::filesystem::path(filepathInput);
-            scheduleBackground = cv::imread(schedulePath.string(), cv::IMREAD_COLOR);
-            LoadTextureToMemory(scheduleBackground, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
-            redrawEventContainer = true;
+            if(filepathInput){
+                schedulePath = std::filesystem::path(filepathInput);
+                scheduleBackground = cv::imread(schedulePath.string(), cv::IMREAD_COLOR);
+                LoadTextureToMemory(scheduleBackground, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
+                redrawEventContainer = true;
+            }
         }
 
         //  End schedule preview window
