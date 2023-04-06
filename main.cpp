@@ -194,18 +194,22 @@ bool showEventContainerBoundingBox = true;
 bool eventContainerParametersChanged = false;
 bool redrawEventContainer = false;
 
-std::filesystem::path path = std::filesystem::current_path().parent_path();
-std::string workingDirectoryPath = path.string();
-std::string schedulePath = workingDirectoryPath + "/TXLC_Planning.png";
+std::filesystem::path settingsPath = (std::string) std::getenv("USERPROFILE") + "/Documents/PS2 Scheduler/settings.ini";
+std::filesystem::path workingDirectoryPath = settingsPath.parent_path();
+std::filesystem::path schedulePath = std::filesystem::current_path().parent_path() / "TXLC_Planning.png";
 
 int main(int, char**) {
     std::time_t currentTime = std::time({});
     std::ofstream saveSettingsStream;
     std::ifstream loadSettingsStream;
 
-    loadSettingsStream.open(workingDirectoryPath + "/settings.ini");
+    loadSettingsStream.open(settingsPath);
     loadSettings(loadSettingsStream);
     loadSettingsStream.close();
+
+    settingsPath.make_preferred();
+    workingDirectoryPath.make_preferred();
+    std::filesystem::create_directory(workingDirectoryPath);
     
 
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -261,7 +265,7 @@ int main(int, char**) {
 
     int windowsX = 0;
 
-    cv::Mat scheduleBackground = cv::imread(schedulePath, cv::IMREAD_COLOR);
+    cv::Mat scheduleBackground = cv::imread(schedulePath.string(), cv::IMREAD_COLOR);
     if(scheduleBackground.empty()){
         scheduleBackground = cv::Mat(cv::Mat(9, 16, CV_8UC4, cv::Scalar(255, 255, 255, 255)));
         tinyfd_messageBox("Warning", "Could not find default schedule background, please select a new one.", "ok", "warning", 1);
@@ -331,13 +335,15 @@ int main(int, char**) {
         float windowPadding = mainStyle.WindowPadding.y;
 
         //  Schedule working directory
+        std::string pathString = workingDirectoryPath.string();
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Working directory:");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 150);
-        ImGui::InputTextWithHint("##working_directory", "Please select a working directory...", &workingDirectoryPath); if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip("Currently selected working directory");
+        ImGui::InputTextWithHint("##working_directory", "Please select a working directory...", &pathString); if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip("Currently selected working directory");
         ImGui::SameLine();
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+        workingDirectoryPath = std::filesystem::path(pathString).make_preferred();
         bool selectWorkingDirectoryPath = ImGui::Button("Select directory", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight())); if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip("Select main directory to save/load files from");
 
         float buttonWidth = (ImGui::GetContentRegionAvail().x - mainStyle.WindowPadding.x) / 3 - mainStyle.FramePadding.x;
@@ -348,23 +354,21 @@ int main(int, char**) {
 
         /*  GUI functions  */
         if(selectWorkingDirectoryPath){
-            char *directoryPathInput = tinyfd_selectFolderDialog("Select working directory", workingDirectoryPath.c_str());
-            if(directoryPathInput) workingDirectoryPath = directoryPathInput;
+            char *directoryPathInput = tinyfd_selectFolderDialog("Select working directory", workingDirectoryPath.string().c_str());
+            if(directoryPathInput){
+                workingDirectoryPath = directoryPathInput;
+                workingDirectoryPath.make_preferred();
+                }
         }
         if(saveSchedule){ 
-            std::string path = workingDirectoryPath;;
-            path.append("/schedule_project.jpg");
-
-            char *projectSavePath = tinyfd_saveFileDialog("Schedule project save location", path.c_str(), 1, saveFileFormats, "Project save file");
+            char *projectSavePath = tinyfd_saveFileDialog("Schedule project save location", (workingDirectoryPath / "schedule_project.sav").string().c_str(), 1, saveFileFormats, "Project save file");
             if(projectSavePath){
                 std::ofstream saveEventsStream(projectSavePath);
                 saveOpsEvents(saveEventsStream, OpsEvents);
             }
         }
         if(loadSchedule){ 
-            std::string path = workingDirectoryPath;
-            path.append("/*.sav");
-            char *projectLoadPath = tinyfd_openFileDialog("Schedule project save location", path.c_str(), 1, saveFileFormats, "Project save file", 0);
+            char *projectLoadPath = tinyfd_openFileDialog("Schedule project save location", (workingDirectoryPath / "*.sav").string().c_str(), 1, saveFileFormats, "Project save file", 0);
             if(projectLoadPath){
                 OpsEvents.clear();
                 std::ifstream loadEventsStream(projectLoadPath);
@@ -382,15 +386,12 @@ int main(int, char**) {
 
             cv::Mat scheduleDefinitive = scheduleBackground.clone();
             renderPreview(eventContainers, scheduleBackground, scheduleDefinitive, fontSize, unifyFontSize, false);
-            cv::imwrite(workingDirectoryPath + fileName, scheduleDefinitive);
+            cv::imwrite((workingDirectoryPath / fileName).string(), scheduleDefinitive);
         }
         if(loadScheduleBackground){
-            std::string path = workingDirectoryPath;
-            path.append("/*.*");
-            
-            char *filepathInput = tinyfd_openFileDialog("Select schedule background", path.c_str(), 2, imageFilters, "image files", 0);
-            if(filepathInput) schedulePath = filepathInput;
-            scheduleBackground = cv::imread(schedulePath, cv::IMREAD_COLOR);
+            char *filepathInput = tinyfd_openFileDialog("Select schedule background", (workingDirectoryPath / "*.*").string().c_str(), 2, imageFilters, "image files", 0);
+            if(filepathInput) schedulePath = std::filesystem::path(filepathInput);
+            scheduleBackground = cv::imread(schedulePath.string(), cv::IMREAD_COLOR);
             LoadTextureToMemory(scheduleBackground, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
             redrawEventContainer = true;
         }
@@ -630,7 +631,7 @@ int main(int, char**) {
         glfwSwapBuffers(windowContainer);
     }
 
-    saveSettingsStream.open(workingDirectoryPath + "/settings.ini");
+    saveSettingsStream.open(settingsPath);
     saveSettings(saveSettingsStream);
     saveSettingsStream.close();
 
@@ -678,7 +679,13 @@ void loadSettings(std::ifstream &inStream){
             }
             DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, showEventContainerBoundingBox)
         }else if(settingsTag == "working-directory-path"){
-            std::getline(inStream, workingDirectoryPath);
+            std::getline(inStream, params);
+            std::istringstream iss(params);
+            if(!(iss >> workingDirectoryPath)){
+                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
+                continue;
+            }
+            workingDirectoryPath.make_preferred();
             DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, workingDirectoryPath)
         }else if(settingsTag == "window-size"){
             std::getline(inStream, params);
