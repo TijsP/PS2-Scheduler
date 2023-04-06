@@ -49,7 +49,7 @@ using namespace events;
 //  - app crashes when previewROI in renderPreview() tries to access non-existant data when the parameters involved in size and position are too large
 //      - in addition, the app crashes when an image is loaded which is smaller than the original background image. This is caused by the same bug
 #define APP_VERSION "0.1.1"
-// #define DEBUG
+#define DEBUG
 
 #ifndef DEBUG
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")     //  prevents console opening automatically
@@ -215,7 +215,7 @@ int main(int, char**) {
     char pathBuffer[MAX_PATH + 1];
     GetModuleFileNameA(NULL, pathBuffer, MAX_PATH);
     schedulePath = pathBuffer;
-    schedulePath = schedulePath.parent_path() / "TXLC_Planning.png";
+    schedulePath = schedulePath.parent_path().parent_path() / "TXLC_Planning.png";
 
 #ifdef DEBUG
     std::cout << "schedule path: " << schedulePath << std::endl;
