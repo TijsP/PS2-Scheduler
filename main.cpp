@@ -388,7 +388,7 @@ int main(int, char**) {
             }
         }
         if(exportSchedule){
-            std::string fileName = "/schedule_";
+            std::string fileName = (workingDirectoryPath / "schedule_").string();
             char date[std::size("YYYY-MM-DD_HHhMMm")];
             std::strftime(date, sizeof(date), "%F_%Hh%Mm", std::localtime(&currentTime));
             fileName.append(date);
