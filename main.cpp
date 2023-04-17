@@ -104,6 +104,8 @@ void rebindOpsEvents(std::vector<OpsEvent> &opsEvents, std::vector<EventContaine
     }
 }
 
+void drawEventsTable(ImGuiStyle style, bool manualEndDisable = false);      //  manualEndDisable = true for when more event fields need to be disabled based on the selected event
+
 void loadSettings(std::ifstream &inStream);
 void saveSettings(std::ofstream &outStream);
 
@@ -420,129 +422,7 @@ int main(int, char**) {
         if(ImGui::BeginTabBar("SettingsTabBar", tabBarFlags)){
             if(ImGui::BeginTabItem("Events")){
 
-                ImGuiTableFlags defaultTableFlags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp;
-                if(ImGui::BeginTable("ops_table", 5, defaultTableFlags, ImVec2(0.0, ImGui::GetFrameHeight() * 6))){
-                    ImGui::TableSetupScrollFreeze(0, 1);
-                    ImGui::TableSetupColumn("Squad title", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed, 25.0f);
-                    ImGui::TableSetupColumn("Leader", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_None);
-                    ImGui::TableSetupColumn("Day", ImGuiTableColumnFlags_PreferSortAscending);      //  TODO: implement sorting based on weekday
-                    ImGui::TableHeadersRow();
-
-                    ImGuiListClipper clipper;
-                    clipper.Begin(OpsEvents.size(), ImGui::GetFrameHeightWithSpacing());
-                    while (clipper.Step())
-                    {
-                        for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
-                            std::string id = "Ops event entry ";    //  make sure every entry is associated with an unique ID
-                            id.append(std::to_string(i + 1));
-                            ImGui::PushID(id.c_str());
-
-                            ImGui::TableNextRow();                  //  add relevant items to the table
-                            ImGui::TableSetColumnIndex(0);
-                            const bool isSelected = (selectedEventIndex == i) ? true : false;
-                            if(ImGui::Selectable(OpsEvents[i].title.c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns))
-                                selectedEventIndex = i;
-                            if(isSelected) ImGui::SetItemDefaultFocus();
-                            ImGui::TableNextColumn();
-                            ImGui::Text(OpsEvents[i].description.c_str()); ImGui::TableNextColumn();
-                            ImGui::Text(OpsEvents[i].leader.c_str()); ImGui::TableNextColumn();
-                            ImGui::Text(OpsEvents[i].time.c_str()); ImGui::TableNextColumn();
-                            ImGui::Text(OpsEvents[i].returnWeekday(OpsEvents[i].weekday)); ImGui::TableNextColumn();
-
-                            ImGui::PopID();                         //  pop custom ID set by PushID
-                        }
-                    }
-                    ImGui::EndTable();
-                }
-                
-                OpsEvent *selectedOpsEvent = &dummyEvent;
-                static int selectedWeekday = dummyEvent.weekday;
-
-                ImGui::Text("Add/remove event:");
-                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("Add new event, or remove the\nselected event");
-                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                buttonWidth = (ImGui::GetContentRegionAvail().x - mainStyle.WindowPadding.x) / 2;// - mainStyle.FramePadding.x;
-                if(ImGui::Button("+##add_event", ImVec2(buttonWidth, ImGui::GetFrameHeight()))){
-                    OpsEvents.push_back(defaultEvent);
-                    OpsEventAdded = true;
-                }
-                ImGui::SameLine();
-                if(OpsEvents.size() == 0)
-                    selectedEventIndex = -1;
-                if(selectedEventIndex < 0){     //  Disable GUI elements if no OpsEvent has been selected
-                    ImGui::BeginDisabled();
-                    selectedOpsEvent = &dummyEvent;
-                }
-                else{
-                    selectedOpsEvent = &OpsEvents[selectedEventIndex];
-                    selectedWeekday = selectedOpsEvent->weekday;
-                }
-                if(ImGui::Button("-##remove_event", ImVec2(buttonWidth, ImGui::GetFrameHeight()))){
-                    if(selectedEventIndex >= 0){
-                        OpsEvents.erase(OpsEvents.begin() + selectedEventIndex);
-                        OpsEventAdded = true;
-                    }
-                }
-                ImGui::Text("Squad title:");
-                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("Title of the squad");
-                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::InputTextWithHint("##title", "title...", &selectedOpsEvent->title);
-                if(ImGui::IsItemDeactivatedAfterEdit())
-                    redrawEventContainer = true;
-                
-                ImGui::Text("Squad Description:");
-                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("Description (currently       \nnon-functional)");
-                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::InputTextWithHint("##description", "coming soon...", &dummyEvent.description, ImGuiInputTextFlags_ReadOnly);
-                if(ImGui::IsItemDeactivatedAfterEdit())
-                    redrawEventContainer = true;
-                
-                ImGui::Text("Leader:");
-                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("Leader of the squad");
-                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::InputTextWithHint("##leader", "Leader name...", &selectedOpsEvent->leader);
-                if(ImGui::IsItemDeactivatedAfterEdit())
-                    redrawEventContainer = true;
-                
-                ImGui::Text("Start time:");
-                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("Starting time");
-                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::InputTextWithHint("##time", "time...", &selectedOpsEvent->time);
-                if(ImGui::IsItemDeactivatedAfterEdit())
-                    redrawEventContainer = true;
-                
-                const char *weekdaysArray[8] = {    OpsEvent::returnWeekday(Monday),
-                                                    OpsEvent::returnWeekday(Tuesday),
-                                                    OpsEvent::returnWeekday(Wednesday),
-                                                    OpsEvent::returnWeekday(Thursday),
-                                                    OpsEvent::returnWeekday(Friday),
-                                                    OpsEvent::returnWeekday(Saturday),
-                                                    OpsEvent::returnWeekday(Sunday),
-                                                    OpsEvent::returnWeekday(tbd)    };
-                ImGui::Text("Weekday:");
-                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("The day of the week the event\nwill take place");
-                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::Combo("##weekday", &selectedWeekday, weekdaysArray, 8);
-                selectedOpsEvent->weekday = (Weekdays)selectedWeekday;
-                if(ImGui::IsItemEdited()){
-                    redrawEventContainer = true;
-                    OpsEventWeekdayChanged = true;
-                }
-
-                ImGui::EndDisabled();       //  From here, GUI elements are enabled again
+                drawEventsTable(mainStyle);
 
                 ImGui::Text("Font size:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
@@ -600,6 +480,21 @@ int main(int, char**) {
                     eventContainerParametersChanged = true;
 
                 ImGui::EndTabItem();    //  Layout tab
+            }
+            if(ImGui::BeginTabItem("Advanced")){
+
+                drawEventsTable(mainStyle, true);
+
+                ImGui::Text("Squad Description:");
+                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                    ImGui::SetTooltip("Description (currently       \nnon-functional)");
+                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::InputTextWithHint("##description", "coming soon...", &dummyEvent.description, ImGuiInputTextFlags_ReadOnly);
+                if(ImGui::IsItemDeactivatedAfterEdit())
+                    redrawEventContainer = true;
+
+                ImGui::EndDisabled();
             }
 
         if(OpsEventAdded | OpsEventWeekdayChanged){
@@ -668,6 +563,123 @@ int main(int, char**) {
 
     glfwDestroyWindow(windowContainer);
     glfwTerminate();
+}
+
+void drawEventsTable(ImGuiStyle style, bool manualEndDisable){
+ImGuiTableFlags defaultTableFlags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp;
+if(ImGui::BeginTable("ops_table", 5, defaultTableFlags, ImVec2(0.0, ImGui::GetFrameHeight() * 6))){
+    ImGui::TableSetupScrollFreeze(0, 1);
+    ImGui::TableSetupColumn("Squad title", ImGuiTableColumnFlags_None);
+    ImGui::TableSetupColumn("Leader", ImGuiTableColumnFlags_None);
+    ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_None);
+    ImGui::TableSetupColumn("Day", ImGuiTableColumnFlags_PreferSortAscending);      //  TODO: implement sorting based on weekday
+    ImGui::TableHeadersRow();
+
+    ImGuiListClipper clipper;
+    clipper.Begin(OpsEvents.size(), ImGui::GetFrameHeightWithSpacing());
+    while (clipper.Step())
+    {
+        for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
+            std::string id = "Ops event entry ";    //  make sure every entry is associated with an unique ID
+            id.append(std::to_string(i + 1));
+            ImGui::PushID(id.c_str());
+
+            ImGui::TableNextRow();                  //  add relevant items to the table
+            ImGui::TableSetColumnIndex(0);
+            const bool isSelected = (selectedEventIndex == i) ? true : false;
+            if(ImGui::Selectable(OpsEvents[i].title.c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns))
+                selectedEventIndex = i;
+            if(isSelected) ImGui::SetItemDefaultFocus();
+            ImGui::TableNextColumn();
+            ImGui::Text(OpsEvents[i].description.c_str()); ImGui::TableNextColumn();
+            ImGui::Text(OpsEvents[i].leader.c_str()); ImGui::TableNextColumn();
+            ImGui::Text(OpsEvents[i].time.c_str()); ImGui::TableNextColumn();
+            ImGui::Text(OpsEvents[i].returnWeekday(OpsEvents[i].weekday)); ImGui::TableNextColumn();
+
+            ImGui::PopID();                         //  pop custom ID set by PushID
+        }
+    }
+    ImGui::EndTable();
+}
+
+OpsEvent *selectedOpsEvent = &dummyEvent;
+static int selectedWeekday = dummyEvent.weekday;
+
+ImGui::Text("Add/remove event:");
+if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+    ImGui::SetTooltip("Add new event, or remove the\nselected event");
+ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+float addEventButtonWidth = (ImGui::GetContentRegionAvail().x - style.WindowPadding.x) / 2;// - mainStyle.FramePadding.x;
+if(ImGui::Button("+##add_event", ImVec2(addEventButtonWidth, ImGui::GetFrameHeight()))){
+    OpsEvents.push_back(defaultEvent);
+    OpsEventAdded = true;
+}
+ImGui::SameLine();
+if(OpsEvents.size() == 0)
+    selectedEventIndex = -1;
+if(selectedEventIndex < 0){     //  Disable GUI elements if no OpsEvent has been selected
+    ImGui::BeginDisabled();
+    selectedOpsEvent = &dummyEvent;
+}
+else{
+    selectedOpsEvent = &OpsEvents[selectedEventIndex];
+    selectedWeekday = selectedOpsEvent->weekday;
+}
+if(ImGui::Button("-##remove_event", ImVec2(addEventButtonWidth, ImGui::GetFrameHeight()))){
+    if(selectedEventIndex >= 0){
+        OpsEvents.erase(OpsEvents.begin() + selectedEventIndex);
+        OpsEventAdded = true;
+    }
+}
+ImGui::Text("Squad title:");
+if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+    ImGui::SetTooltip("Title of the squad");
+ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+ImGui::InputTextWithHint("##title", "title...", &selectedOpsEvent->title);
+if(ImGui::IsItemDeactivatedAfterEdit())
+    redrawEventContainer = true;
+
+ImGui::Text("Leader:");
+if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+    ImGui::SetTooltip("Leader of the squad");
+ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+ImGui::InputTextWithHint("##leader", "Leader name...", &selectedOpsEvent->leader);
+if(ImGui::IsItemDeactivatedAfterEdit())
+    redrawEventContainer = true;
+
+ImGui::Text("Start time:");
+if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+    ImGui::SetTooltip("Starting time");
+ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+ImGui::InputTextWithHint("##time", "time...", &selectedOpsEvent->time);
+if(ImGui::IsItemDeactivatedAfterEdit())
+    redrawEventContainer = true;
+
+const char *weekdaysArray[8] = {    OpsEvent::returnWeekday(Monday),
+                                    OpsEvent::returnWeekday(Tuesday),
+                                    OpsEvent::returnWeekday(Wednesday),
+                                    OpsEvent::returnWeekday(Thursday),
+                                    OpsEvent::returnWeekday(Friday),
+                                    OpsEvent::returnWeekday(Saturday),
+                                    OpsEvent::returnWeekday(Sunday),
+                                    OpsEvent::returnWeekday(tbd)    };
+ImGui::Text("Weekday:");
+if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+    ImGui::SetTooltip("The day of the week the event\nwill take place");
+ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+ImGui::Combo("##weekday", &selectedWeekday, weekdaysArray, 8);
+selectedOpsEvent->weekday = (Weekdays)selectedWeekday;
+if(ImGui::IsItemEdited()){
+    redrawEventContainer = true;
+    OpsEventWeekdayChanged = true;
+}
+
+if(!manualEndDisable)       //  If more fields need to be disabled based on selected event
+ImGui::EndDisabled();       //  From here, GUI elements are enabled again
 }
 
 #ifdef DEBUG
