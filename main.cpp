@@ -567,7 +567,7 @@ int main(int, char**) {
 
 void drawEventsTable(ImGuiStyle style, bool manualEndDisable){
 ImGuiTableFlags defaultTableFlags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp;
-if(ImGui::BeginTable("ops_table", 5, defaultTableFlags, ImVec2(0.0, ImGui::GetFrameHeight() * 6))){
+if(ImGui::BeginTable("ops_table", 4, defaultTableFlags, ImVec2(0.0, ImGui::GetFrameHeight() * 6))){
     ImGui::TableSetupScrollFreeze(0, 1);
     ImGui::TableSetupColumn("Squad title", ImGuiTableColumnFlags_None);
     ImGui::TableSetupColumn("Leader", ImGuiTableColumnFlags_None);
@@ -591,7 +591,6 @@ if(ImGui::BeginTable("ops_table", 5, defaultTableFlags, ImVec2(0.0, ImGui::GetFr
                 selectedEventIndex = i;
             if(isSelected) ImGui::SetItemDefaultFocus();
             ImGui::TableNextColumn();
-            ImGui::Text(OpsEvents[i].description.c_str()); ImGui::TableNextColumn();
             ImGui::Text(OpsEvents[i].leader.c_str()); ImGui::TableNextColumn();
             ImGui::Text(OpsEvents[i].time.c_str()); ImGui::TableNextColumn();
             ImGui::Text(OpsEvents[i].returnWeekday(OpsEvents[i].weekday)); ImGui::TableNextColumn();
