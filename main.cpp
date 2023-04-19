@@ -104,7 +104,7 @@ void rebindOpsEvents(std::vector<OpsEvent> &opsEvents, std::vector<EventContaine
     }
 }
 
-void drawEventsTable(ImGuiStyle style, bool manualEndDisable = false);      //  manualEndDisable = true for when more event fields need to be disabled based on the selected event
+events::OpsEvent *drawEventsTable(ImGuiStyle style, bool manualEndDisable = false);      //  manualEndDisable = true for when more event fields need to be disabled based on the selected event
 
 void loadSettings(std::ifstream &inStream);
 void saveSettings(std::ofstream &outStream);
@@ -483,14 +483,13 @@ int main(int, char**) {
             }
             if(ImGui::BeginTabItem("Advanced")){
 
-                drawEventsTable(mainStyle, true);
+                events::OpsEvent *selectedEvent = drawEventsTable(mainStyle, true);
 
                 ImGui::Text("Squad Description:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("Description (currently       \nnon-functional)");
+                    ImGui::SetTooltip("Description of the squad. Text\ndoes not wrap around currently.");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::InputTextWithHint("##description", "coming soon...", &dummyEvent.description, ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputTextMultiline("##description", &selectedEvent->description, ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight() * 3), ImGuiInputTextFlags_None);
                 if(ImGui::IsItemDeactivatedAfterEdit())
                     redrawEventContainer = true;
 
@@ -565,7 +564,7 @@ int main(int, char**) {
     glfwTerminate();
 }
 
-void drawEventsTable(ImGuiStyle style, bool manualEndDisable){
+events::OpsEvent *drawEventsTable(ImGuiStyle style, bool manualEndDisable){
 ImGuiTableFlags defaultTableFlags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp;
 if(ImGui::BeginTable("ops_table", 4, defaultTableFlags, ImVec2(0.0, ImGui::GetFrameHeight() * 6))){
     ImGui::TableSetupScrollFreeze(0, 1);
@@ -679,6 +678,8 @@ if(ImGui::IsItemEdited()){
 
 if(!manualEndDisable)       //  If more fields need to be disabled based on selected event
 ImGui::EndDisabled();       //  From here, GUI elements are enabled again
+
+return selectedOpsEvent;
 }
 
 #ifdef DEBUG
