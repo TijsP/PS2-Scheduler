@@ -7,18 +7,12 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/imgproc.hpp"
 
-// namespace cv{
-//     class Mat;
-//     class FontFace;
-// }
-
 namespace events{
 
     class EventContainer{
         private:
-        cv::FontFace font;
-        int fontSize;
         int width, height;
+        bool isUnique;      //  a flag indicating whether this instance uses the same settings as other EventContainers
 
         public:
         Weekdays weekday;
@@ -30,11 +24,8 @@ namespace events{
         EventContainer(int renderfieldWidth, int renderfieldHeight);
         EventContainer();
 
-        void setFontSize(int newFontSize);
-        int getFontSize();
-        void setFont(cv::FontFace &newFont);
-        bool setGlobalFontSize(int &globalFontSize, bool unifyFontSize);
-        void setFont(cv::FontFace &newFont, int size);
+        bool usesUniqueSettings();
+        void UniqueSettings(bool unique);
 
         bool drawText(bool isPreview = true);
 
@@ -44,7 +35,6 @@ namespace events{
         int getHeight();
 
         private:
-        std::string wrapString(const std::string &text, int *largestWordWidth = nullptr);
     };
 
 }

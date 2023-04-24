@@ -4,23 +4,16 @@
 #include <fstream>
 #include <string>
 
+#include "EventHelper.hpp"
+
+namespace cv{
+    class FontFace;
+}
+
 namespace events{
 
-    enum Weekdays {
-        Monday,
-        Tuesday,
-        Wednesday,
-        Thursday,
-        Friday,
-        Saturday,
-        Sunday,
-        tbd
-    };
-    std::ostream &operator<<(std::ostream &output, const Weekdays &weekday);
-    std::istream &operator>>(std::istream &input, Weekdays &weekday);
-
     struct OpsEvent{
-        Weekdays weekday;
+        //  usually unique to each OpsEvent. Rendered versions of the variable are meant for formatting (such as newline characters)
         std::string title;
         std::string renderedTitle;
         std::string description;
@@ -29,12 +22,19 @@ namespace events{
         std::string renderedLeader;
         std::string time;
         std::string renderedTime;
+        events::Weekdays weekday;
+
+        //  usually shared between OpsEvents. Can be set on a per-event basis. In this case, isUnique should be set to true
+        bool isUnique = false;
+        cv::FontFace &font;
+        int fontSize;
+        int fontColour[4];
 
         OpsEvent(std::string title, std::string leader, Weekdays weekday, std::string time = "", std::string description = "");
 
         OpsEvent &operator= (const OpsEvent &rhs);
 
-        const static char *returnWeekday(Weekdays weekdayOfInterest);
+        bool setGlobalFontSize(cv::FontFace font, int &globalFontSize, int maxWidth, bool unifyFontSize);
     };
     std::ostream &operator<<(std::ostream &output, const OpsEvent &opsevent);
     std::istream &operator>>(std::istream &input, OpsEvent &opsevent);

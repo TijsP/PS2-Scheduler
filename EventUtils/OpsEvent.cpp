@@ -1,4 +1,5 @@
 #include "OpsEvent.hpp"
+#include "opencv2/opencv.hpp"
 
 std::ostream &events::operator<<(std::ostream &output, const Weekdays &weekday){
     int weekdayInt = weekday;
@@ -21,40 +22,49 @@ events::OpsEvent::OpsEvent(std::string title, std::string leader, events::Weekda
     renderedLeader(""),
     time(time),
     renderedTime(""),
-    weekday(weekday) { }
-const char *events::OpsEvent::returnWeekday(events::Weekdays weekdayOfInterest){
-        switch (weekdayOfInterest)
-        {
-        case events::Monday:
-            return "Monday";
-            break;
-        case events::Tuesday:
-            return "Tuesday";
-            break;
-        case events::Wednesday:
-            return "Wednesday";
-            break;
-        case events::Thursday:
-            return "Thursday";
-            break;
-        case events::Friday:
-            return "Friday";
-            break;
-        case events::Saturday:
-            return "Saturday";
-            break;
-        case events::Sunday:
-            return "Sunday";
-            break;
-        case events::tbd:
-            return "t.b.d.";
-            break;
+    weekday(weekday),
+    font(cv::FontFace("Times New Roman")),
+    fontSize(60),
+    fontColour{251, 255, 140, 255} { }
+
+bool events::OpsEvent::setGlobalFontSize(cv::FontFace font, int &globalFontSize, int maxWidth, bool unifyFontSize){
+    bool fontSizeWasChanged = false;
+    if(unifyFontSize){
+        if(!isUnique)
+            fontSize = globalFontSize;
+        float fontScaleFactor = 1.0f;
+
+        int largestWidth = 0;
+        int titleTextWidth = 0;
+        wrapString(title, font, fontSize, maxWidth, &titleTextWidth);
+        int timeTextWidth = 0;
+        wrapString(time, font, fontSize, maxWidth, &timeTextWidth);
+        int leaderTextWidth = 0;
+        wrapString(leader, font, fontSize, maxWidth, &leaderTextWidth);
+        int descriptionTextWidth = 0;
+        wrapString(description, font, fontSize, maxWidth, &descriptionTextWidth);
+
+        largestWidth = (titleTextWidth > largestWidth) ? titleTextWidth : largestWidth;
+        largestWidth = (timeTextWidth > largestWidth) ? timeTextWidth : largestWidth;
+        largestWidth = (leaderTextWidth > largestWidth) ? leaderTextWidth : largestWidth;
+        largestWidth = (descriptionTextWidth > largestWidth) ? descriptionTextWidth : largestWidth;
+
+        if(largestWidth > maxWidth)
+            fontScaleFactor = (float)maxWidth / largestWidth;
         
-        default:
-            return "Invalid";
-            break;
+        fontSize *= fontScaleFactor;
+        if(!isUnique){
+            if(fontSize != globalFontSize)
+                fontSizeWasChanged = true;
+            globalFontSize = fontSize;
         }
+#ifdef DEBUG
+        std::cout << "font size set to: " << fontSize << std::endl;
+#endif
     }
+
+    return fontSizeWasChanged;
+}
 events::OpsEvent &events::OpsEvent::operator= (const events::OpsEvent &rhs){
         weekday = rhs.weekday;
         title = rhs.title;
