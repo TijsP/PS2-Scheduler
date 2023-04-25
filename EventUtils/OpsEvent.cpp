@@ -24,7 +24,7 @@ events::OpsEvent::OpsEvent(std::string title, std::string leader, events::Weekda
     time(time),
     renderedTime(""),
     weekday(weekday),
-    font(cv::FontFace("Times New Roman")),
+    font(cv::FontFace("sans")),
     fontSize(60),
     fontColour{ 0.54901f, 1.0f, 0.98431f }      //  RGBA
     { }
@@ -77,15 +77,35 @@ events::OpsEvent &events::OpsEvent::operator= (const events::OpsEvent &rhs){
         return *this;
     }
 std::ostream &events::operator<<(std::ostream &output, const events::OpsEvent &opsevent){
-    output << opsevent.title << "\t" << opsevent.description << "\t" << opsevent.leader << "\t" << opsevent.time << "\t" << opsevent.weekday;
+    output <<   opsevent.title << "\t" <<
+                opsevent.description << "\t" <<
+                opsevent.leader << "\t" <<
+                opsevent.time << "\t" <<
+                opsevent.weekday << "\t" <<
+                opsevent.isUnique << "\t" <<
+                opsevent.font.getName() << "\t" <<
+                opsevent.fontSize << "\t" <<
+                opsevent.fontColour[0] << "\t" <<
+                opsevent.fontColour[1] << "\t" <<
+                opsevent.fontColour[2];
     return output;
 }
 std::istream &events::operator>>(std::istream &input, events::OpsEvent &opsevent){
+    std::string fontName = "sans";
+
     std::getline(input, opsevent.title, '\t');
     std::getline(input, opsevent.description, '\t');
     std::getline(input, opsevent.leader, '\t');
     std::getline(input, opsevent.time, '\t');
-    input >> opsevent.weekday;
+    input >> opsevent.weekday; input.ignore(1, '\t');
+    input >> opsevent.isUnique; input.ignore(1, '\t');
+    std::getline(input, fontName, '\t');
+    input >> opsevent.fontSize; input.ignore(1, '\t');
+    input >> opsevent.fontColour[0]; input.ignore(1, '\t');
+    input >> opsevent.fontColour[1]; input.ignore(1, '\t');
+    input >> opsevent.fontColour[2];
+
+    opsevent.font = cv::FontFace(fontName);
     
     return input;
 }

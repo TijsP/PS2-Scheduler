@@ -429,16 +429,6 @@ int main(int, char**) {
 
                 drawEventsTable(mainStyle);
 
-                ImGuiColorEditFlags colourEditFlags = ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoSidePreview;
-                ImGui::Text("Global font colour:");
-                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("Default colour used by all events");
-                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::ColorPicker4("##event_font_colour_global", globalFontColour, colourEditFlags);
-                if(ImGui::IsItemDeactivatedAfterEdit())
-                    OpsEventChanged = true;
-
                 ImGui::Text("Unify font size:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
                     ImGui::SetTooltip("When selected, font size will\nautomatically be adjusted downward\nto fit within the event container");
@@ -452,6 +442,16 @@ int main(int, char**) {
                     ImGui::SetTooltip("The default size of the font,\nin pixels");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
                 ImGui::InputInt("##font_size_global", &fontSize, 0);
+                if(ImGui::IsItemDeactivatedAfterEdit())
+                    OpsEventChanged = true;
+
+                ImGuiColorEditFlags colourEditFlags = ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoSidePreview;
+                ImGui::Text("Global font colour:");
+                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                    ImGui::SetTooltip("Default colour used by all events");
+                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::ColorPicker4("##event_font_colour_global", globalFontColour, colourEditFlags);
                 if(ImGui::IsItemDeactivatedAfterEdit())
                     OpsEventChanged = true;
 
@@ -763,6 +763,14 @@ void loadSettings(std::ifstream &inStream){
                 continue;
             }
             DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, fontSize)
+        }else if(settingsTag == "font-colour"){
+            std::getline(inStream, params);
+            std::istringstream iss(params);
+            if(!(iss >> globalFontColour[0] >> globalFontColour[1] >> globalFontColour[2])){
+                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
+                continue;
+            }
+            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, globalFontColour[0] << " " << globalFontColour[1] << " " << globalFontColour[2])
         }else if(settingsTag == "show-container-bounding-box"){
             std::getline(inStream, params);
             std::istringstream iss(params);
@@ -805,6 +813,7 @@ void saveSettings(std::ofstream &outStream){
     outStream << "Font settings:" << std::endl;
     outStream << "unify-font-size\n" << unifyFontSize << std::endl;
     outStream << "font-size\n" << fontSize << std::endl;
+    outStream << "font-colour\n" << globalFontColour[0] << " " << globalFontColour[1] << " " << globalFontColour[2] << " " << std::endl;
 
     outStream << "\nEvent container settings:" << std::endl;
     outStream << "show-container-bounding-box\n" << showEventContainerBoundingBox << std::endl;
