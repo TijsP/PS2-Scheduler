@@ -29,12 +29,19 @@ bool events::EventContainer::drawText(bool isPreview){
         return false;
         }
 
-    cv::Scalar fontColour =  events::rgbaToScalar(scheduledEvents[0]->fontColour);
-    std::string opsText =   events::wrapString(scheduledEvents[0]->title, scheduledEvents[0]->font, scheduledEvents[0]->fontSize, width)        + "\n" +
-                            events::wrapString(scheduledEvents[0]->description, scheduledEvents[0]->font, scheduledEvents[0]->fontSize, width)  + "\n" +
-                            events::wrapString(scheduledEvents[0]->time, scheduledEvents[0]->font, scheduledEvents[0]->fontSize, width)         + "\n" +
-                            events::wrapString(scheduledEvents[0]->leader, scheduledEvents[0]->font, scheduledEvents[0]->fontSize, width)       + " ";
-    cv::putText(renderfield, opsText, cv::Point(0, scheduledEvents[0]->fontSize), fontColour, scheduledEvents[0]->font, scheduledEvents[0]->fontSize, 390, cv::PUT_TEXT_WRAP, cv::Range(0, width));
+    std::string opsText = "";
+    int textStartHeight = 0;
+    for (auto &&event : scheduledEvents)
+    {
+        textStartHeight += event->fontSize;
+        cv::Scalar fontColour =  events::rgbaToScalar(event->fontColour);
+        opsText =   events::wrapString(event->title, event->font, event->fontSize, width)        + "\n" +
+                    events::wrapString(event->description, event->font, event->fontSize, width)  + "\n" +
+                    events::wrapString(event->time, event->font, event->fontSize, width)         + "\n" +
+                    events::wrapString(event->leader, event->font, event->fontSize, width)       + " ";
+        cv::putText(renderfield, opsText, cv::Point(0, textStartHeight), fontColour, event->font, event->fontSize, 390, cv::PUT_TEXT_WRAP, cv::Range(0, width));
+        textStartHeight += cv::getTextSize(cv::Size(), opsText, cv::Point(0, textStartHeight), event->font, event->fontSize, 390).height;
+    }
     
     return true;
 }
