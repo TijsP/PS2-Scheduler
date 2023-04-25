@@ -430,9 +430,9 @@ int main(int, char**) {
                 drawEventsTable(mainStyle);
 
                 ImGuiColorEditFlags colourEditFlags = ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoSidePreview;
-                ImGui::Text("Font colour:");
+                ImGui::Text("Global font colour:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("colour picker");
+                    ImGui::SetTooltip("Default colour used by all events");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
                 ImGui::ColorPicker4("##event_font_colour_global", globalFontColour, colourEditFlags);
@@ -530,7 +530,7 @@ int main(int, char**) {
                 ImGuiColorEditFlags colourEditFlags = ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoSidePreview;
                 ImGui::Text("Font colour:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("colour picker");
+                    ImGui::SetTooltip("The font colour of this specific event");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
                 ImGui::ColorPicker4("##event_font_colour_unique", &selectedEvent->fontColour[0], colourEditFlags);
