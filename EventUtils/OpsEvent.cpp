@@ -1,4 +1,5 @@
 #include "OpsEvent.hpp"
+
 #include "opencv2/opencv.hpp"
 
 std::ostream &events::operator<<(std::ostream &output, const Weekdays &weekday){
@@ -25,7 +26,8 @@ events::OpsEvent::OpsEvent(std::string title, std::string leader, events::Weekda
     weekday(weekday),
     font(cv::FontFace("Times New Roman")),
     fontSize(60),
-    fontColour{251, 255, 140, 255} { }
+    fontColour{ 0.54901f, 1.0f, 0.98431f }      //  RGBA
+    { }
 
 bool events::OpsEvent::setGlobalFontSize(cv::FontFace font, int &globalFontSize, int maxWidth, bool unifyFontSize){
     bool fontSizeWasChanged = false;

@@ -67,3 +67,14 @@ std::string events::wrapString(const std::string &text, cv::FontFace font, int f
         *largestWordWidth = largestWidth;
     return wrappedText;
 }
+
+cv::Scalar events::rgbaToScalar(float colourIn[3]){
+    for(int i = 0; i < 3; ++i){
+        if(colourIn[i] < 0)
+            colourIn = 0;
+        if(colourIn[i] > 1)
+            colourIn[i] = 1;
+    }
+
+    return cv::Scalar(colourIn[2] * 255, colourIn[1] * 255, colourIn[0] * 255);      //  OpenCV prefers BGR
+}

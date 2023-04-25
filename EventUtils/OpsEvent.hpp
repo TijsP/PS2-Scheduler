@@ -6,6 +6,8 @@
 
 #include "EventHelper.hpp"
 
+#include "opencv2/imgproc.hpp"
+
 namespace cv{
     class FontFace;
 }
@@ -26,9 +28,9 @@ namespace events{
 
         //  usually shared between OpsEvents. Can be set on a per-event basis. In this case, isUnique should be set to true
         bool isUnique = false;
-        cv::FontFace &font;
+        cv::FontFace font;
         int fontSize;
-        int fontColour[4];
+        float fontColour[3];
 
         OpsEvent(std::string title, std::string leader, Weekdays weekday, std::string time = "", std::string description = "");
 

@@ -29,7 +29,7 @@ bool events::EventContainer::drawText(bool isPreview){
         return false;
         }
 
-    cv::Scalar fontColour = cv::Scalar(scheduledEvents[0]->fontColour[0], scheduledEvents[0]->fontColour[1], scheduledEvents[0]->fontColour[2], scheduledEvents[0]->fontColour[3]);
+    cv::Scalar fontColour =  events::rgbaToScalar(scheduledEvents[0]->fontColour);
     std::string opsText =   events::wrapString(scheduledEvents[0]->title, scheduledEvents[0]->font, scheduledEvents[0]->fontSize, width)        + "\n" +
                             events::wrapString(scheduledEvents[0]->description, scheduledEvents[0]->font, scheduledEvents[0]->fontSize, width)  + "\n" +
                             events::wrapString(scheduledEvents[0]->time, scheduledEvents[0]->font, scheduledEvents[0]->fontSize, width)         + "\n" +

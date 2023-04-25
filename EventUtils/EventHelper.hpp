@@ -4,6 +4,8 @@
 #include <fstream>
 #include <string>
 
+#include "opencv2/core/types.hpp"
+
 namespace cv{
     class FontFace;
 }
@@ -25,6 +27,8 @@ namespace events{
     const char *weekdayToString(events::Weekdays weekday);
     
     std::string wrapString(const std::string &text, cv::FontFace font, int fontSize, int maxWidth, int *largestWordWidth = nullptr);
+
+    cv::Scalar rgbaToScalar(float colourIn[3]);
 
 }
 

@@ -183,6 +183,7 @@ const int minimumWindowWidth = settingsBarWidth + schedulePreviewMinimumWidth;
 const int minimumWindowHeight = 400;
 
 //  Font settings
+float globalFontColour[4] = { 0.54901f, 1.0f, 0.98431f }; //  RGB
 bool unifyFontSize = false;
 int fontSize = 60;
 
@@ -426,21 +427,31 @@ int main(int, char**) {
         if(ImGui::BeginTabBar("SettingsTabBar", tabBarFlags)){
             if(ImGui::BeginTabItem("Events")){
 
-                ImGui::Text("Global font size:");
+                drawEventsTable(mainStyle);
+
+                ImGuiColorEditFlags colourEditFlags = ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoSidePreview;
+                ImGui::Text("Font colour:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("The default size of the font,\nin pixels");
+                    ImGui::SetTooltip("colour picker");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::InputInt("##global_font_size", &fontSize, 0);
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::ColorPicker4("##event_font_colour_global", globalFontColour, colourEditFlags);
                 if(ImGui::IsItemDeactivatedAfterEdit())
                     OpsEventChanged = true;
-
-                drawEventsTable(mainStyle);
 
                 ImGui::Text("Unify font size:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
                     ImGui::SetTooltip("When selected, font size will\nautomatically be adjusted downward\nto fit within the event container");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
                 ImGui::Checkbox("##unify_font_size", &unifyFontSize);
+                if(ImGui::IsItemDeactivatedAfterEdit())
+                    OpsEventChanged = true;
+
+                ImGui::Text("Global font size:");
+                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                    ImGui::SetTooltip("The default size of the font,\nin pixels");
+                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+                ImGui::InputInt("##font_size_global", &fontSize, 0);
                 if(ImGui::IsItemDeactivatedAfterEdit())
                     OpsEventChanged = true;
 
@@ -512,7 +523,17 @@ int main(int, char**) {
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
                     ImGui::SetTooltip("The default size of the font,\nin pixels");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::InputInt("##font_size", &selectedEvent->fontSize, 0);
+                ImGui::InputInt("##font_size_unique", &selectedEvent->fontSize, 0);
+                if(ImGui::IsItemDeactivatedAfterEdit())
+                    OpsEventChanged = true;
+
+                ImGuiColorEditFlags colourEditFlags = ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoSidePreview;
+                ImGui::Text("Font colour:");
+                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                    ImGui::SetTooltip("colour picker");
+                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+                ImGui::ColorPicker4("##event_font_colour_unique", &selectedEvent->fontColour[0], colourEditFlags);
                 if(ImGui::IsItemDeactivatedAfterEdit())
                     OpsEventChanged = true;
 
@@ -534,7 +555,7 @@ int main(int, char**) {
                 {
                     if(!event.isUnique){
                         event.fontSize = fontSize;
-                        // event.fontColour = 
+                        std::memcpy(event.fontColour, globalFontColour, sizeof(event.fontColour));
                     }
                 }
                 
