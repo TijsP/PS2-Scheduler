@@ -48,7 +48,7 @@ using namespace events;
 //  FIXED:
 //  - app crashes when previewROI in renderPreview() tries to access non-existant data when the parameters involved in size and position are too large
 //      - in addition, the app crashes when an image is loaded which is smaller than the original background image. This is caused by the same bug
-#define APP_VERSION "0.1.1"
+
 #define DEBUG
 
 #ifndef DEBUG
