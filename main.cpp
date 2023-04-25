@@ -48,7 +48,7 @@ using namespace events;
 //  - app crashes when previewROI in renderPreview() tries to access non-existant data when the parameters involved in size and position are too large
 //      - in addition, the app crashes when an image is loaded which is smaller than the original background image. This is caused by the same bug
 
-// #define DEBUG
+#define DEBUG
 
 #ifndef DEBUG
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")     //  prevents console opening automatically
@@ -116,6 +116,8 @@ void saveSettings(std::ofstream &outStream);
 
 void loadOpsEvents(std::ifstream &inStream, std::vector<OpsEvent> &opsEvents);
 void saveOpsEvents(std::ofstream &outStream, const std::vector<OpsEvent> &opsEvents);
+
+void saveVersionCompatability(int versionMajor, int versionMinor);
 
 const char *imageFilters[] = {"*.png", "*.jpg"};
 const char *saveFileFormats[] = { "*.sav" };
@@ -827,10 +829,19 @@ void saveSettings(std::ofstream &outStream){
 
 void loadOpsEvents(std::ifstream &inStream, std::vector<OpsEvent> &opsEvents){
     std::string settingsTag = "";
+    int versionMajor = -1, versionMinor = 0;
     while(std::getline(inStream, settingsTag)){
         std::string params;
 
-        if(settingsTag == "event:"){
+        if(settingsTag == "Made with version:"){
+            std::getline(inStream, params);
+            std::istringstream iss(params);
+            if(!(iss >> versionMajor >> versionMinor)){
+                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
+                continue;
+            }
+            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, versionMajor << " " << versionMinor)
+        }else if(settingsTag == "event:"){
             std::getline(inStream, params);
             std::istringstream iss(params);
             OpsEvent newOpsEvent = OpsEvent("", "", Monday, "");
@@ -883,8 +894,11 @@ void loadOpsEvents(std::ifstream &inStream, std::vector<OpsEvent> &opsEvents){
             continue;
         }
     }
+
+    saveVersionCompatability(versionMajor, versionMinor);
 }
 void saveOpsEvents(std::ofstream &outStream, const std::vector<OpsEvent> &opsEvents){
+    outStream << "Made with version:\n" << SCHEDULER_VERSION_MAJOR << " " << SCHEDULER_VERSION_MINOR << std::endl;
     outStream << "Planned events:" << std::endl;
     for(auto &event : OpsEvents)
         outStream << "event:\n" << event << std::endl;
@@ -896,4 +910,15 @@ void saveOpsEvents(std::ofstream &outStream, const std::vector<OpsEvent> &opsEve
     outStream << "first-container-pos\n" << firstEventContainerPos[0] << " " << firstEventContainerPos[1] << std::endl;
     outStream << "container-size\n" << eventContainerSize[0] << " " << eventContainerSize[1] << std::endl;
     outStream << "container-spacing\n" << eventContainerHorizontalSpacing << " " << eventContainerVerticalSpacing << std::endl;
+}
+
+void saveVersionCompatability(int versionMajor, int versionMinor){
+    if(versionMajor < 0){
+        tinyfd_messageBox("Version warning", "No version number was found in this save file. The file might work, or it might not. If it does not, open the file in a text editor and type over the values manually.", "ok", "warning", 1);
+        return;
+    }else if(versionMajor == 0){
+        if (versionMinor >= 3)
+            return;
+        
+    }
 }

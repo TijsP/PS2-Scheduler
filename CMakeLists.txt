@@ -19,7 +19,7 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 find_package( OpenGL REQUIRED)
 add_subdirectory(EventUtils)
 
-add_compile_definitions(SCHEDULER_VERSION="${PROJECT_VERSION}")
+add_compile_definitions(SCHEDULER_VERSION="${PROJECT_VERSION}" SCHEDULER_VERSION_MAJOR="${PROJECT_VERSION_MAJOR}" SCHEDULER_VERSION_MINOR="${PROJECT_VERSION_MINOR}")
 
 add_executable(${PROJECT_NAME} main.cpp ${imgui} ${tinyfd} ${PROJECT_SOURCE_DIR}/icon.rc)
 
