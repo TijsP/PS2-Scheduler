@@ -9,4 +9,4 @@ add_library(${PROJECT_NAME} STATIC EventContainer.cpp OpsEvent.cpp EventHelper.c
 target_link_libraries(${PROJECT_NAME} PUBLIC ${OpenCV_LIBS})
 
 install(TARGETS ${PROJECT_NAME} DESTINATION lib)
-install(FILES EventContainer.hpp OpsEvent.hpp EventHelper DESTINATION include)
+install(FILES EventContainer.hpp OpsEvent.hpp EventHelper.hpp DESTINATION include)
