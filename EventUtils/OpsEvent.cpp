@@ -16,13 +16,9 @@ std::istream &events::operator>>(std::istream &input, Weekdays &weekday){
 
 events::OpsEvent::OpsEvent(std::string title, std::string leader, events::Weekdays weekday, std::string time, std::string description) : 
     title(title),
-    renderedTitle(""),
     description(description),
-    renderedDescription(""),
     leader(leader),
-    renderedLeader(""),
     time(time),
-    renderedTime(""),
     weekday(weekday),
     font(cv::FontFace("sans")),
     fontSize(60),

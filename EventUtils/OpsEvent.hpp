@@ -17,13 +17,9 @@ namespace events{
     struct OpsEvent{
         //  usually unique to each OpsEvent. Rendered versions of the variable are meant for formatting (such as newline characters)
         std::string title;
-        std::string renderedTitle;
         std::string description;
-        std::string renderedDescription;
         std::string leader;
-        std::string renderedLeader;
         std::string time;
-        std::string renderedTime;
         events::Weekdays weekday;
 
         //  usually shared between OpsEvents. Can be set on a per-event basis. In this case, isUnique should be set to true
