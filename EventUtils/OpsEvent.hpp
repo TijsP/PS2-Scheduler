@@ -27,6 +27,7 @@ namespace events{
         cv::FontFace font;
         int fontSize;
         float fontColour[3];
+        int verticalPadding;
 
         OpsEvent(std::string title, std::string leader, Weekdays weekday, std::string time = "", std::string description = "");
 

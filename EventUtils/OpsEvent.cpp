@@ -22,7 +22,8 @@ events::OpsEvent::OpsEvent(std::string title, std::string leader, events::Weekda
     weekday(weekday),
     font(cv::FontFace("sans")),
     fontSize(60),
-    fontColour{ 0.54901f, 1.0f, 0.98431f }      //  RGBA
+    fontColour{ 0.54901f, 1.0f, 0.98431f },     //  RGBA
+    verticalPadding(15)
     { }
 
 bool events::OpsEvent::setGlobalFontSize(cv::FontFace font, int &globalFontSize, int maxWidth, bool unifyFontSize){
@@ -83,7 +84,8 @@ std::ostream &events::operator<<(std::ostream &output, const events::OpsEvent &o
                 opsevent.fontSize << "\t" <<
                 opsevent.fontColour[0] << "\t" <<
                 opsevent.fontColour[1] << "\t" <<
-                opsevent.fontColour[2];
+                opsevent.fontColour[2] << "\t" <<
+                opsevent.verticalPadding;
     return output;
 }
 std::istream &events::operator>>(std::istream &input, events::OpsEvent &opsevent){
@@ -99,7 +101,8 @@ std::istream &events::operator>>(std::istream &input, events::OpsEvent &opsevent
     input >> opsevent.fontSize; input.ignore(1, '\t');
     input >> opsevent.fontColour[0]; input.ignore(1, '\t');
     input >> opsevent.fontColour[1]; input.ignore(1, '\t');
-    input >> opsevent.fontColour[2];
+    input >> opsevent.fontColour[2]; input.ignore(1, '\t');
+    input >> opsevent.verticalPadding;
 
     opsevent.font = cv::FontFace(fontName);
     

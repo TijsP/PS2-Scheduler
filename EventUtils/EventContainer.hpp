@@ -13,6 +13,7 @@ namespace events{
         private:
         int width, height;
         bool isUnique;      //  a flag indicating whether this instance uses the same settings as other EventContainers
+        int previousUnformattedTextStartHeight;
 
         public:
         Weekdays weekday;
@@ -27,7 +28,7 @@ namespace events{
         bool usesUniqueSettings();
         void UniqueSettings(bool unique);
 
-        bool drawText(bool isPreview = true);
+        bool drawText(bool syncTextHeight, bool isPreview = true);      //  returns true if the text needs to be rendered again
 
         void changeRenderfieldSize(int newWidth, int newHeight);
         void changeRenderfieldSize(int newWidth, int newHeight, cv::FontFace &newFont);

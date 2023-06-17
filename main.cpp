@@ -45,40 +45,43 @@ using namespace events;
 //  - with select container parameters and font sizes, the unify font size function doesn't work properly and allows a single character to overflow onto the next line
 //  - when the squad title/time occupies too many lines, the subsequent fields are pushed out of line compared to the same fields in different containers
 //  FIXED:
-//  - app crashes when previewROI in renderPreview() tries to access non-existant data when the parameters involved in size and position are too large
+//  - app crashes when previewROI in renderSchedule() tries to access non-existant data when the parameters involved in size and position are too large
 //      - in addition, the app crashes when an image is loaded which is smaller than the original background image. This is caused by the same bug
 
-#define DEBUG
+// #define DEBUG
 
 #ifndef DEBUG
 #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")     //  prevents console opening automatically
 #endif
 
-void renderPreview(std::vector<EventContainer> &containers, const cv::Mat &background, cv::Mat &preview, int &globalFontSize, bool unifyFontSize = false, bool isPreview = true){
-    preview = background.clone();
-    int totalWidthOfContainers = containers[0].pos[0] - containers[0].horizontalSpacing;
+void renderSchedule(std::vector<EventContainer> &containers, const cv::Mat &background, cv::Mat &preview, int &globalFontSize, bool unifyFontSize = false, bool isPreview = true){
+    redrawSchedule:
+    {
+        preview = background.clone();
+        int totalWidthOfContainers = containers[0].pos[0] - containers[0].horizontalSpacing;
 
-    //  needs to be done before drawing any of the text, to ensure all containers use the same size font
-    for(int i = 0; i < containers.size(); ++i){
-        totalWidthOfContainers += containers[i].getWidth() + containers[i].horizontalSpacing;
-        if(totalWidthOfContainers > preview.cols){
-            tinyfd_messageBox("Warning", "Event container position, size or spacing  too large.", "ok", "warning", 1);
-            return;
-        }
-        for (auto &&event : containers[i].scheduledEvents)
-        {
-            if(event->setGlobalFontSize(event->font, globalFontSize, containers[i].getWidth(), unifyFontSize)){
-                totalWidthOfContainers = containers[0].pos[0] - containers[0].horizontalSpacing;
-                i = -1;     //  if font size was changed, reiterate over all containers to ensure the font size is up to date
-                break;
+        //  needs to be done before drawing any of the text, to ensure all containers use the same size font
+        for(int i = 0; i < containers.size(); ++i){
+            totalWidthOfContainers += containers[i].getWidth() + containers[i].horizontalSpacing;
+            if(totalWidthOfContainers > preview.cols){
+                tinyfd_messageBox("Warning", "Event container position, size or spacing  too large.", "ok", "warning", 1);
+                return;
+            }
+            for (auto &&event : containers[i].scheduledEvents)
+            {
+                if(event->setGlobalFontSize(event->font, globalFontSize, containers[i].getWidth(), unifyFontSize)){
+                    totalWidthOfContainers = containers[0].pos[0] - containers[0].horizontalSpacing;
+                    goto redrawSchedule;
+                }
             }
         }
-    }
-    
-    for(auto &container : containers){
-        container.drawText(isPreview);
-        cv::Mat previewROI = preview(cv::Rect(container.pos[0], container.pos[1], container.getWidth(), container.getHeight()));
-        cv::add(container.renderfield, previewROI, previewROI);
+        
+        for(auto &container : containers){
+            if(container.drawText(true, isPreview))
+                goto redrawSchedule;
+            cv::Mat previewROI = preview(cv::Rect(container.pos[0], container.pos[1], container.getWidth(), container.getHeight()));
+            cv::add(container.renderfield, previewROI, previewROI);
+        }
     }
 }
 void setContainerSpacing(std::vector<EventContainer> &containers, int startPos[2]){
@@ -322,7 +325,7 @@ int main(int, char**) {
 #endif
 
     setContainerSpacing(eventContainers, firstEventContainerPos);
-    renderPreview(eventContainers, scheduleBackground, schedulePreview, fontSize);
+    renderSchedule(eventContainers, scheduleBackground, schedulePreview, fontSize);
     LoadTextureToMemory(schedulePreview, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
 
     while(!glfwWindowShouldClose(windowContainer)){
@@ -404,7 +407,7 @@ int main(int, char**) {
             fileName.append(".jpg");
 
             cv::Mat scheduleDefinitive = scheduleBackground.clone();
-            renderPreview(eventContainers, scheduleBackground, scheduleDefinitive, fontSize, unifyFontSize, false);
+            renderSchedule(eventContainers, scheduleBackground, scheduleDefinitive, fontSize, unifyFontSize, false);
             cv::imwrite((workingDirectoryPath / fileName).string(), scheduleDefinitive);
         }
         if(loadScheduleBackground){
@@ -575,7 +578,7 @@ int main(int, char**) {
                 eventContainerParametersChanged = false;
             }
             if(redrawEventContainer){
-                renderPreview(eventContainers, scheduleBackground, schedulePreview, fontSize, unifyFontSize, showEventContainerBoundingBox);
+                renderSchedule(eventContainers, scheduleBackground, schedulePreview, fontSize, unifyFontSize, showEventContainerBoundingBox);
                 LoadTextureToMemory(schedulePreview, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
 #ifdef DEBUG
                 std::cout << "unify font size: " << unifyFontSize << std::endl;
