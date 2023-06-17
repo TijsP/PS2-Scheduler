@@ -55,7 +55,7 @@ using namespace events;
 #endif
 
 void renderSchedule(std::vector<EventContainer> &containers, const cv::Mat &background, cv::Mat &preview, int &globalFontSize, bool unifyFontSize = false, bool isPreview = true){
-    redrawSchedule:
+    redrawSchedule:         //  While a do-while loop could have been used, goto ultimately provided a cleaner solution as it prevented setting flags and checking for them at the end of every loop
     {
         preview = background.clone();
         int totalWidthOfContainers = containers[0].pos[0] - containers[0].horizontalSpacing;
