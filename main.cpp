@@ -191,6 +191,7 @@ const int minimumWindowHeight = 400;
 float globalFontColour[4] = { 0.54901f, 1.0f, 0.98431f }; //  RGB
 bool unifyFontSize = false;
 int fontSize = 60;
+int textFieldPadding = 15;
 
 //  OpsEvent settings
 std::vector<OpsEvent> OpsEvents;
@@ -513,6 +514,14 @@ int main(int, char**) {
                 if(ImGui::IsItemDeactivatedAfterEdit())
                     OpsEventChanged = true;
 
+                ImGui::Text("Text field padding:");
+                if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                    ImGui::SetTooltip("The default size of the font, in\npixels. Applies to this specific event\nwhen Unique Settings is selected,\nor to all events otherwise");
+                ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+                ImGui::InputInt("##text_field_padding", &textFieldPadding, 0);
+                if(ImGui::IsItemDeactivatedAfterEdit())
+                    OpsEventChanged = true;
+
                 ImGui::Text("Unique settings:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
                     ImGui::SetTooltip("When selected, this event will\nuse personalized value for all\nsettings, as opposed to the global\nvalues set in the Events tab");
@@ -555,6 +564,7 @@ int main(int, char**) {
                 {
                     if(!event.isUnique){
                         event.fontSize = fontSize;
+                        event.verticalPadding = textFieldPadding;
                         std::memcpy(event.fontColour, globalFontColour, sizeof(event.fontColour));
                     }
                 }
@@ -755,6 +765,14 @@ void loadSettings(std::ifstream &inStream){
                 continue;
             }
             DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, unifyFontSize)
+        }else if(settingsTag == "text-field-padding"){
+            std::getline(inStream, params);
+            std::istringstream iss(params);
+            if(!(iss >> textFieldPadding)){
+                std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
+                continue;
+            }
+            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, fontSize)
         }else if(settingsTag == "font-size"){
             std::getline(inStream, params);
             std::istringstream iss(params);
@@ -812,6 +830,7 @@ void loadSettings(std::ifstream &inStream){
 void saveSettings(std::ofstream &outStream){
     outStream << "Font settings:" << std::endl;
     outStream << "unify-font-size\n" << unifyFontSize << std::endl;
+    outStream << "text-field-padding\n" << textFieldPadding << std::endl;
     outStream << "font-size\n" << fontSize << std::endl;
     outStream << "font-colour\n" << globalFontColour[0] << " " << globalFontColour[1] << " " << globalFontColour[2] << " " << std::endl;
 
