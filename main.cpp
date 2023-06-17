@@ -517,30 +517,25 @@ int main(int, char**) {
                 ImGui::Checkbox("##use_unique_settings", &selectedEvent->isUnique);
                 if(ImGui::IsItemDeactivatedAfterEdit())
                     OpsEventChanged = true;
-                
-                if(!selectedEvent->isUnique)
-                    ImGui::BeginDisabled();
 
                 ImGui::Text("Font size:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("The default size of the font,\nin pixels");
+                    ImGui::SetTooltip("The default size of the font, in\npixels. Applies to this specific event\nwhen Unique Settings is selected,\nor to all events otherwise");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
-                ImGui::InputInt("##font_size_unique", &selectedEvent->fontSize, 0);
+                ImGui::InputInt("##font_size_unique", selectedEvent->isUnique ? &selectedEvent->fontSize : &fontSize, 0);
                 if(ImGui::IsItemDeactivatedAfterEdit())
                     OpsEventChanged = true;
 
                 ImGuiColorEditFlags colourEditFlags = ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_NoAlpha | ImGuiColorEditFlags_NoSidePreview;
                 ImGui::Text("Font colour:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("The font colour of this specific event");
+                    ImGui::SetTooltip("The font colour of this specific\nevent. Applies to this specific event\nwhen Unique Settings is selected,\nor to all events otherwise");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::ColorPicker4("##event_font_colour_unique", &selectedEvent->fontColour[0], colourEditFlags);
+                ImGui::ColorPicker4("##event_font_colour_unique", selectedEvent->isUnique ? &selectedEvent->fontColour[0] : globalFontColour, colourEditFlags);
                 if(ImGui::IsItemDeactivatedAfterEdit())
                     OpsEventChanged = true;
 
-                if(!selectedEvent->isUnique)
-                    ImGui::EndDisabled();
                 if(selectedEventIndex < 0 )
                     ImGui::EndDisabled();   //  associated with drawEventsTable
                 ImGui::EndTabItem();
