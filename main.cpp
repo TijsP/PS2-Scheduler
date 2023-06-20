@@ -516,7 +516,7 @@ int main(int, char**) {
 
                 ImGui::Text("Text field padding:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("The default size of the font, in\npixels. Applies to this specific event\nwhen Unique Settings is selected,\nor to all events otherwise");
+                    ImGui::SetTooltip("The amount of pixels between\ndifferent between text fields\n(like the leader and start time\nfields)");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
                 ImGui::InputInt("##text_field_padding", &textFieldPadding, 0);
                 if(ImGui::IsItemDeactivatedAfterEdit())
