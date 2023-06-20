@@ -554,7 +554,26 @@ int main(int, char**) {
             }
 
             if(OpsEventChanged){
-                std::sort(OpsEvents.begin(), OpsEvents.end(), compareByWeekday);
+                //  A custom sorting algorithm was used to ensure selectedEventIndex would be updated properly, so that the event that was changed stays selected when the order changes
+                std::vector<OpsEvent> tmpVector;
+                if(OpsEvents.size() > 0){
+                    int newEventIndex = -1;
+
+                    for(int j = 0; j <= Weekdays::tbd; j++){
+                        for (int i = 0; i < OpsEvents.size(); i++)
+                        {
+                            if(OpsEvents[i].weekday == (Weekdays)j){
+                                tmpVector.push_back(OpsEvents[i]);
+                                if(i == selectedEventIndex){
+                                    newEventIndex = (int)tmpVector.size() - 1;
+                                    std::cout << "      new event index: " << newEventIndex << std::endl;
+                                }
+                            }
+                        }
+                    }
+                    OpsEvents = tmpVector;
+                    selectedEventIndex = newEventIndex;
+                }
                 rebindOpsEvents(OpsEvents, eventContainers);
 #ifdef DEBUG
                 std::cout << "Ops events found: " << OpsEvents.size() << std::endl;
@@ -686,10 +705,9 @@ events::OpsEvent *drawEventsTable(ImGuiStyle style, bool manualEndDisabled){
         ImGui::BeginDisabled();
         selectedOpsEvent = &dummyEvent;
     }
-    else{
+    else
         selectedOpsEvent = &OpsEvents[selectedEventIndex];
-        selectedWeekday = selectedOpsEvent->weekday;
-    }
+        
     if(ImGui::Button("-##remove_event", ImVec2(addEventButtonWidth, ImGui::GetFrameHeight()))){
         if(selectedEventIndex >= 0){
             OpsEvents.erase(OpsEvents.begin() + selectedEventIndex);
@@ -723,6 +741,7 @@ events::OpsEvent *drawEventsTable(ImGuiStyle style, bool manualEndDisabled){
     if(ImGui::IsItemDeactivatedAfterEdit())
         OpsEventChanged = true;
 
+    selectedWeekday = selectedOpsEvent->weekday;
     const char *weekdaysArray[8] = {    events::weekdayToString(Monday),
                                         events::weekdayToString(Tuesday),
                                         events::weekdayToString(Wednesday),
