@@ -94,7 +94,7 @@ bool events::EventContainer::drawText(bool syncTextHeight, bool isPreview){
         }
         textStartHeight += textStartOffset;
     }
-
+    //  should not be independent from syncTextHeight?
     if(previousUnformattedTextStartHeight == unformattedTextStartHeight){
         textNeedsRedraw = false;
     }

@@ -113,6 +113,7 @@ void rebindOpsEvents(std::vector<OpsEvent> &opsEvents, std::vector<EventContaine
 }
 
 events::OpsEvent *drawEventsTable(ImGuiStyle style, bool manualEndDisable = false);      //  manualEndDisable = true for when more event fields need to be disabled based on the selected event
+void drawColourPresetHandler(ImGuiStyle style, events::OpsEvent *event);
 
 void loadSettings(std::ifstream &inStream);
 void saveSettings(std::ofstream &outStream);
@@ -188,7 +189,9 @@ const int minimumWindowWidth = settingsBarWidth + schedulePreviewMinimumWidth;
 const int minimumWindowHeight = 400;
 
 //  Font settings
-float globalFontColour[4] = { 0.54901f, 1.0f, 0.98431f }; //  RGB
+std::vector<float> globalFontColour = { 0.54901f, 1.0f, 0.98431f, 1.0f }; //  RGB
+std::vector<std::vector<float>> colourPresets = { globalFontColour, { 0.943182f, 0.0964618f, 0.0964618f, 1.0f }, { 0.425157f, 0.926136f, 0.178913f, 1.0f }, { 0.979856f, 1.0f, 0.113636f, 1.0f } };
+int selectedColourPreset = -1;
 bool unifyFontSize = false;
 int fontSize = 60;
 int textFieldPadding = 15;
@@ -433,7 +436,7 @@ int main(int, char**) {
         if(ImGui::BeginTabBar("SettingsTabBar", tabBarFlags)){
             if(ImGui::BeginTabItem("Events")){
 
-                drawEventsTable(mainStyle);
+                events::OpsEvent *selectedEvent = drawEventsTable(mainStyle);
 
                 ImGui::Text("Unify font size:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
@@ -457,9 +460,13 @@ int main(int, char**) {
                     ImGui::SetTooltip("Default colour used by all events");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::ColorPicker4("##event_font_colour_global", globalFontColour, colourEditFlags);
-                if(ImGui::IsItemDeactivatedAfterEdit())
+                ImGui::ColorPicker4("##event_font_colour_global", &globalFontColour[0], colourEditFlags);
+                if(ImGui::IsItemDeactivatedAfterEdit()){
                     OpsEventChanged = true;
+                    selectedColourPreset = -1;
+                }
+
+                drawColourPresetHandler(mainStyle, selectedEvent);
 
                 ImGui::EndTabItem();    //  Events tab
             }
@@ -544,9 +551,13 @@ int main(int, char**) {
                     ImGui::SetTooltip("The font colour of this specific\nevent. Applies to this specific event\nwhen Unique Settings is selected,\nor to all events otherwise");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
                 ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-                ImGui::ColorPicker4("##event_font_colour_unique", selectedEvent->isUnique ? &selectedEvent->fontColour[0] : globalFontColour, colourEditFlags);
-                if(ImGui::IsItemDeactivatedAfterEdit())
+                ImGui::ColorPicker4("##event_font_colour_unique", selectedEvent->isUnique ? &selectedEvent->fontColour[0] : &globalFontColour[0], colourEditFlags);
+                if(ImGui::IsItemDeactivatedAfterEdit()){
                     OpsEventChanged = true;
+                    selectedColourPreset = -1;
+                }
+
+                drawColourPresetHandler(mainStyle, selectedEvent);
 
                 if(selectedEventIndex < 0 )
                     ImGui::EndDisabled();   //  associated with drawEventsTable
@@ -566,7 +577,6 @@ int main(int, char**) {
                                 tmpVector.push_back(OpsEvents[i]);
                                 if(i == selectedEventIndex){
                                     newEventIndex = (int)tmpVector.size() - 1;
-                                    std::cout << "      new event index: " << newEventIndex << std::endl;
                                 }
                             }
                         }
@@ -584,7 +594,7 @@ int main(int, char**) {
                     if(!event.isUnique){
                         event.fontSize = fontSize;
                         event.verticalPadding = textFieldPadding;
-                        std::memcpy(event.fontColour, globalFontColour, sizeof(event.fontColour));
+                        std::memcpy(event.fontColour, &globalFontColour[0], sizeof(event.fontColour));
                     }
                 }
                 
@@ -766,6 +776,79 @@ events::OpsEvent *drawEventsTable(ImGuiStyle style, bool manualEndDisabled){
     return selectedOpsEvent;
 }
 
+void drawColourPresetHandler(ImGuiStyle style, events::OpsEvent *event){
+    bool presetWasRemoved = false;
+    std::vector<float> eventColour = { event->fontColour[0], event->fontColour[1], event->fontColour[2], 1.0f };
+
+    ImGui::SetCursorPosX(ImGui::GetContentRegionMax().x - 200);
+    float addPresetButtonWidth = (ImGui::GetContentRegionAvail().x - style.WindowPadding.x) / 2;
+    if(ImGui::Button("Add preset##add_colour_preset", ImVec2(addPresetButtonWidth, ImGui::GetFrameHeight())))
+        colourPresets.push_back(event->isUnique ? eventColour : globalFontColour);
+    if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+        ImGui::SetTooltip("Adds a colour preset using the\ncurrently selected colour");
+    ImGui::SameLine();
+
+    if(colourPresets.size() == 0)
+        selectedColourPreset = -1;
+    if(selectedColourPreset < 0)
+        ImGui::BeginDisabled();
+
+    if(ImGui::Button("Remove preset##remove_colour_preset", ImVec2(addPresetButtonWidth, ImGui::GetFrameHeight()))){
+        if(selectedColourPreset >= 0){
+            colourPresets.erase(colourPresets.begin() + selectedColourPreset);
+            selectedColourPreset = -1;
+            presetWasRemoved = true;
+        }
+    }
+    if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+        ImGui::SetTooltip("Removes the currently selected\ncolour preset");
+
+    if(selectedColourPreset < 0 && !presetWasRemoved)
+        ImGui::EndDisabled();
+
+    ImGui::Text("Colour presets:");
+    if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+        ImGui::SetTooltip("These presets can be used to quickly\nselect a colour to either apply to all\nthe events, or just the selected event\nif it's marked as unique. Please note\nthat presets can't be changed once set.");
+    for(int i = 0; i < colourPresets.size(); i++){
+        bool selectedPresetBorderWasSet = false;
+        if(i == 0)
+            ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
+        else
+            ImGui::SameLine();
+
+        if(ImGui::GetContentRegionAvail().x < ImGui::GetFrameHeight()){     //  GetFrameHeight is used to set the width of each colour button
+            ImGui::NewLine();
+            ImGui::SetCursorPosX(ImGui::GetContentRegionMax().x - 200);
+        }
+
+        std::string buttonID = "##colour_preset_preview_" + std::to_string(i);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(colourPresets[i][0], colourPresets[i][1], colourPresets[i][2], colourPresets[i][3]));
+        if(i == selectedColourPreset){
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
+            selectedPresetBorderWasSet = true;
+        }
+
+        if(ImGui::Button(buttonID.c_str(), ImVec2(ImGui::GetFrameHeight(), ImGui::GetFrameHeight()))){
+            if(selectedPresetBorderWasSet && selectedColourPreset != i)
+                ImGui::PopStyleVar(1);          //  Because selectedColourPreset has been changed, PopStyleVar needs to be called here as it won't be called by the if-statement
+
+            selectedColourPreset = i;
+            if(event->isUnique){
+                event->fontColour[0] = colourPresets[selectedColourPreset][0];
+                event->fontColour[1] = colourPresets[selectedColourPreset][1];
+                event->fontColour[2] = colourPresets[selectedColourPreset][2];
+            }else
+                globalFontColour = colourPresets[selectedColourPreset];
+        OpsEventChanged = true;
+        }
+        
+        if(i == selectedColourPreset && selectedPresetBorderWasSet)
+            ImGui::PopStyleVar(1);
+        ImGui::PopStyleColor(1);
+    }
+}
+
 #ifdef DEBUG
 #define DEBUG_LOADED_PARAMS_MESSAGE(Tag, ParamStream) std::cout << "Succesfully loaded [" << Tag << "] with parameters: " << ParamStream << std::endl;
 #else
@@ -808,6 +891,32 @@ void loadSettings(std::ifstream &inStream){
                 continue;
             }
             DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, globalFontColour[0] << " " << globalFontColour[1] << " " << globalFontColour[2])
+        }else if(settingsTag == "font-colour-presets"){
+            std::getline(inStream, params);
+            std::istringstream iss(params);
+
+            colourPresets.clear();
+            while(!iss.eof()){
+                if(colourPresets.size() > 0)
+                    iss.ignore(1, ' \t');
+                std::vector<float> colour;
+                float colourElements[3];
+                if(!(iss >> colourElements[0] >> colourElements[1] >> colourElements[2])){
+                    std::cout << "error parsing " << settingsTag << " parameters. Parameters found were: " << params << std::endl;
+                    break;
+                }
+                colour.push_back(colourElements[0]);
+                colour.push_back(colourElements[1]);
+                colour.push_back(colourElements[2]);
+                colour.push_back(1);                    //  Manually set alpha to 1, as this isn't saved manually
+                colourPresets.push_back(colour);
+            }
+            DEBUG_LOADED_PARAMS_MESSAGE(settingsTag, "")
+            #ifdef DEBUG
+            for(int i = 0; i < colourPresets.size(); i++){
+                std::cout << colourPresets[i][0] << " " << colourPresets[i][1] << " " << colourPresets[i][2] << " " << std::endl;
+            }
+            #endif
         }else if(settingsTag == "show-container-bounding-box"){
             std::getline(inStream, params);
             std::istringstream iss(params);
@@ -852,6 +961,12 @@ void saveSettings(std::ofstream &outStream){
     outStream << "text-field-padding\n" << textFieldPadding << std::endl;
     outStream << "font-size\n" << fontSize << std::endl;
     outStream << "font-colour\n" << globalFontColour[0] << " " << globalFontColour[1] << " " << globalFontColour[2] << " " << std::endl;
+    outStream << "font-colour-presets\n";
+    for(int i = 0; i < colourPresets.size(); i++){
+        if(i > 0)
+            outStream << "\t";
+        outStream << colourPresets[i][0] << " " << colourPresets[i][1] << " " << colourPresets[i][2] << " ";
+    }
 
     outStream << "\nEvent container settings:" << std::endl;
     outStream << "show-container-bounding-box\n" << showEventContainerBoundingBox << std::endl;
