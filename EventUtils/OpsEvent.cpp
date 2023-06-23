@@ -71,6 +71,14 @@ events::OpsEvent &events::OpsEvent::operator= (const events::OpsEvent &rhs){
         leader = rhs.leader;
         time = rhs.time;
 
+        isUnique = rhs.isUnique;
+        font = rhs.font;
+        fontSize = rhs.fontSize;
+        fontColour[0] = rhs.fontColour[0];
+        fontColour[1] = rhs.fontColour[1];
+        fontColour[2] = rhs.fontColour[2];
+        verticalPadding = verticalPadding;
+
         return *this;
     }
 std::ostream &events::operator<<(std::ostream &output, const events::OpsEvent &opsevent){
