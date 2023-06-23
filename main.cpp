@@ -26,7 +26,7 @@
 using namespace events;
 
 //  TODO: fill out settings bar
-//  TODO: create OPS/layout/advanced settings tabs
+//  DONE: create OPS/layout/advanced settings tabs
 //  DONE: create custom text wrapping function
 //  DONE: create OPS data struct
 
@@ -43,8 +43,8 @@ using namespace events;
 
 //  BUGS:
 //  - with select container parameters and font sizes, the unify font size function doesn't work properly and allows a single character to overflow onto the next line
-//  - when the squad title/time occupies too many lines, the subsequent fields are pushed out of line compared to the same fields in different containers
 //  FIXED:
+//  - when the squad title/time occupies too many lines, the subsequent fields are pushed out of line compared to the same fields in different containers
 //  - app crashes when previewROI in renderSchedule() tries to access non-existant data when the parameters involved in size and position are too large
 //      - in addition, the app crashes when an image is loaded which is smaller than the original background image. This is caused by the same bug
 
