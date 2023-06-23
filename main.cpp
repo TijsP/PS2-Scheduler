@@ -515,7 +515,7 @@ int main(int, char**) {
 
                 ImGui::Text("Squad Description:");
                 if(ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
-                    ImGui::SetTooltip("Description of the squad. Text\ndoes not wrap around currently.");
+                    ImGui::SetTooltip("Description of the squad");
                 ImGui::SameLine(ImGui::GetContentRegionMax().x - 200);
                 ImGui::InputTextMultiline("##description", &selectedEvent->description, ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight() * 3), ImGuiInputTextFlags_None);
                 if(ImGui::IsItemDeactivatedAfterEdit())
