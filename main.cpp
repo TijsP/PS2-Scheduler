@@ -419,7 +419,15 @@ int main(int, char**) {
             if(filepathInput){
                 schedulePath = std::filesystem::path(filepathInput);
                 scheduleBackground = cv::imread(schedulePath.string(), cv::IMREAD_COLOR);
-                LoadTextureToMemory(scheduleBackground, &schedulePreviewID, &scheduleWidth, &scheduleHeight);
+                if(scheduleBackground.channels() == 3){
+                    //  An alpha channel needs to be added manually
+                    cv::Mat colourChannels[3], alphaChannel;
+                    cv::split(scheduleBackground, colourChannels);
+                    alphaChannel = colourChannels[0].clone();
+                    alphaChannel = cv::Scalar(1);
+                    std::vector<cv::Mat> channelVector = { colourChannels[0], colourChannels[1], colourChannels[2], alphaChannel };
+                    cv::merge(channelVector, scheduleBackground);
+                }
                 redrawEventContainer = true;
             }
         }
